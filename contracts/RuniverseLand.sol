@@ -7,10 +7,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "OpenZeppelin/openzeppelin-contracts@4.2.0/contracts/token/ERC721/ERC721.sol";
-import "OpenZeppelin/openzeppelin-contracts@4.2.0/contracts/access/Ownable.sol";
-import "OpenZeppelin/openzeppelin-contracts@4.2.0/contracts/token/ERC20/IERC20.sol";
-import "OpenZeppelin/openzeppelin-contracts@4.2.0/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./ERC721Vestable.sol";
 import "./IRuniverseLand.sol";
 
@@ -189,8 +189,8 @@ contract RuniverseLand is
     /**
      * @notice set the last vesting token Id
      */
-    function setLastVestingTokenId(uint256 _newTokenId) public onlyOwner {
-        _setLastVestingTokenId(_newTokenId);
+    function setLastVestingGlobalId(uint256 _newTokenId) public onlyOwner {
+        _setLastVestingGlobalId(_newTokenId);
     }
 
     /**
@@ -201,7 +201,7 @@ contract RuniverseLand is
     }
 
     /**
-     * @notice set the new vesting start time
+     * @notice set the new vesting end time
      */
     function setVestingEnd(uint256 _newVestingEnd) public onlyOwner {
         _setVestingEnd(_newVestingEnd);

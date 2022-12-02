@@ -1,0 +1,28 @@
+{
+  "name": "plot-contract",
+  "version": "1.0.0",
+  "description": "Plots contract",
+  "main": "hardhat.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bisonic-official/plot-contract.git"
+  },
+  "author": "Bisonic",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bisonic-official/plot-contract/issues"
+  },
+  "homepage": "https://github.com/bisonic-official/plot-contract#readme",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.12.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.2.0",
+    "chai": "^4.3.7",
+    "ethers": "^5.7.2"
+  }
+}
