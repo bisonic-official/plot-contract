@@ -55,8 +55,6 @@ contract RuniverseLand is
     /// @dev TODO - do we want to pay for the gas to do this?
     mapping(uint256 => PlotSize) public plotSizes;
 
-
-
     string public constant R = "I should like to save the Shire, if I could";
 
     /**
@@ -99,8 +97,7 @@ contract RuniverseLand is
         );
         numMinted += 1;
         emit LandMinted(recipient, tokenId, size);
-        plotSizes[tokenId] = size; // TODO decide        
-        
+        plotSizes[tokenId] = size; // TODO decide
         _mint(recipient, tokenId);
     }
 
@@ -189,8 +186,8 @@ contract RuniverseLand is
     /**
      * @notice set the last vesting token Id
      */
-    function setLastVestingGlobalId(uint256 _newTokenId) public onlyOwner {
-        _setLastVestingGlobalId(_newTokenId);
+    function setLastVestingTokenId(uint256 _newTokenId) public onlyOwner {
+        _setLastVestingTokenId(_newTokenId);
     }
 
     /**
@@ -201,7 +198,7 @@ contract RuniverseLand is
     }
 
     /**
-     * @notice set the new vesting end time
+     * @notice set the new vesting start time
      */
     function setVestingEnd(uint256 _newVestingEnd) public onlyOwner {
         _setVestingEnd(_newVestingEnd);

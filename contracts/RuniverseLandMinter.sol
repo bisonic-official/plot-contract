@@ -27,16 +27,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         0 // 128x128
     ];
 
-    uint256[] public plotSizeLocalOffset = [
-        1, // 8x8
-        1, // 16x16
-        1, // 32x32
-        1, // 64x64
-        1 // 128x128
-    ];    
-
-    uint256 public plotGlobalOffset = 1;
-
     uint256[] public plotPrices = [
         0.12 ether,
         0.33 ether,
@@ -44,6 +34,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         8 ether,
         type(uint256).max
     ];
+
+    /// @dev This contract mints token IDs in order, this number is the starting index for token IDs in this minter
+    uint256 public tokenIdOffset = 10000;
 
     uint256 public publicMintStartTime = type(uint256).max;
     uint256 public mintlistStartTime = type(uint256).max;
@@ -68,14 +61,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     /// @notice stores the number minted by this address in the claimslist by size
     mapping(address => mapping(uint256 => uint256))
         public claimlistMintedPerSize;
-
-     //msc: deprecated, now the query is made with the ERC721 events
-    /// @notice stores the current ownder address of a tokenId
-    //mapping(uint256 => address) public tokenIdtoAddress;
-
-    //msc: deprecated, now the query is made with the ERC721 events
-    /// @notice stores the list of tokenId's that an address currently owns
-    //mapping(address => uint256[]) addressToTokenIdArray;
 
     /**
      * @dev Create the contract and set the initial baseURI
@@ -106,59 +91,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         return plotPrices;
     }
 
-    //msc: deprecated, now the query is made with the ERC721 events
-    /*function getOwnerByPlot(uint256 tokenId) public view returns (address) {
-        return tokenIdtoAddress[tokenId];
-    }
-
-    function getPlotsByOwner(address walletAddress) public view returns (uint256[] memory) {
-        return addressToTokenIdArray[walletAddress];
-    }*/
-
-
-
-
-    function getTotalMintedLands() public view returns (uint256) {
-        uint256 totalMintedLands;
-        totalMintedLands =  plotsMinted[0] +
-                            plotsMinted[1] +
-                            plotsMinted[2] +                             
-                            plotsMinted[3] +
-                            plotsMinted[4];
-        return totalMintedLands;                                                        
-    }
-    
-    function getTotalMintedLandsBySize() public view returns (uint256[] memory) {
-        uint256[] memory plotsMintedBySize = new uint256[](5);
-
-        plotsMintedBySize[0] = plotsMinted[0];
-        plotsMintedBySize[1] = plotsMinted[1];
-        plotsMintedBySize[2] = plotsMinted[2];
-        plotsMintedBySize[3] = plotsMinted[3];
-        plotsMintedBySize[4] = plotsMinted[4];
-
-        return plotsMintedBySize;
-    }
-
-    function getAvailableLands() public view returns (uint256[] memory) {
-        uint256[] memory plotsAvailableBySize = new uint256[](5);
-
-        plotsAvailableBySize[0] = plotsAvailablePerSize[0] - plotsMinted[0];
-        plotsAvailableBySize[1] = plotsAvailablePerSize[1] - plotsMinted[1];
-        plotsAvailableBySize[2] = plotsAvailablePerSize[2] - plotsMinted[2];
-        plotsAvailableBySize[3] = plotsAvailablePerSize[3] - plotsMinted[3];
-        plotsAvailableBySize[4] = plotsAvailablePerSize[4] - plotsMinted[4];
-
-        return plotsAvailableBySize;
-    }    
-
     function mintlisted(
         address _who,
         bytes32 _leaf,
         bytes32[] calldata _merkleProof
     ) external view returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(_who));
-        
         if (node != _leaf) return false;
         if (
             MerkleProof.verify(_merkleProof, mintlistMerkleRoot1, _leaf) ||
@@ -178,7 +116,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         nonReentrant
     {
         require(publicStarted(), "Mint not started");
-        require(numPlots > 0 && numPlots <= 20, "Mint from 1 to 20 plots");        
+        require(numPlots > 0 && numPlots <= 20, "Mint from 1 to 20 plots");
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
@@ -190,7 +128,8 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     ) public payable nonReentrant {
         require(mintlistStarted(), "Mint not started");
         require(numPlots > 0 && numPlots <= 20, "Mint from 1 to 20 plots");
-        // verify allowlist        
+
+        // verify allowlist
         bytes32 _leaf = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -200,10 +139,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 claimedMaxPlots
             )
         );
-        
-        //Plain only wallet white list 
-        //bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
-
         require(
             MerkleProof.verify(_merkleProof, mintlistMerkleRoot1, _leaf) ||
                 MerkleProof.verify(_merkleProof, mintlistMerkleRoot2, _leaf),
@@ -227,7 +162,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     ) public payable nonReentrant {
         require(claimsStarted(), "Claims not started");
 
-        // verify allowlist                
+        // verify allowlist
         bytes32 _leaf = keccak256(
             abi.encodePacked(
                 msg.sender,
@@ -237,11 +172,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 claimedMaxPlots
             )
         );
-        
-        
-        //Plain only wallet white list 
-        //bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
-
         require(
             MerkleProof.verify(_merkleProof, claimlistMerkleRoot, _leaf),
             "Invalid proof."
@@ -265,41 +195,35 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         require(
             msg.value == plotPrices[uint256(plotSize)] * numPlots,
             "Ether value sent is not accurate"
-        );        
+        );
         _mintTokens(plotSize, numPlots, recipient);
     }
-
-
 
     function _mintTokens(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
         address recipient
-    ) private {        
+    ) private {
         require(
             plotsMinted[uint256(plotSize)] <
                 plotsAvailablePerSize[uint256(plotSize)],
             "All plots of that size minted"
-        );        
+        );
         require(
             plotsMinted[uint256(plotSize)] + numPlots <=
                 plotsAvailablePerSize[uint256(plotSize)],
             "Trying to mint too many plots"
-        );        
+        );
         for (uint256 i = 0; i < numPlots; i++) {
-
-            uint256 tokenId = ownerGetNextTokenId(plotSize);            
+            uint256 numPlotsMinted = plotsMinted[0] +
+                plotsMinted[1] +
+                plotsMinted[2] +
+                plotsMinted[3] +
+                plotsMinted[4];
+            uint256 tokenId = tokenIdOffset + numPlotsMinted;
             plotsMinted[uint256(plotSize)] += 1;
-
-            //Do we want to pay this GAS? 
-            //msc attention here:
-            //investigate if there is something in the standard, with openzeppeling
-            //msc: managed to obtain tokens with the ERC721 events
-            //tokenIdtoAddress[uint256(tokenId)] = recipient;
-            //addressToTokenIdArray[recipient].push(tokenId);            
-               
             runiverseLand.mintTokenId(recipient, tokenId, plotSize);
-        }        
+        }
     }
 
     function ownerMint(
@@ -308,53 +232,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         address recipient
     ) public onlyOwner {
         _mintTokens(plotSize, numPlots, recipient);
-    }
-
-//msc: Be careful with thie one, will break order.
-    function _mintTokensUsingTokenId(
-        IRuniverseLand.PlotSize plotSize,
-        uint256 tokenId,
-        address recipient
-    ) private {
-        uint256 numPlots = 1;
-        require(
-            plotsMinted[uint256(plotSize)] <
-                plotsAvailablePerSize[uint256(plotSize)],
-            "All plots of that size minted"
-        );
-        require(
-            plotsMinted[uint256(plotSize)] + numPlots <=
-                plotsAvailablePerSize[uint256(plotSize)],
-            "Trying to mint too many plots"
-        );
-
-        plotsMinted[uint256(plotSize)] += 1;
-
-        //msc: deprecated, now the query is made with the ERC721 events
-        //tokenIdtoAddress[uint256(tokenId)] = recipient;
-        //addressToTokenIdArray[recipient].push(tokenId);
-
-
-        runiverseLand.mintTokenId(recipient, tokenId, plotSize);
-    }
-
-
-//msc: Be careful with this one, will break order.
-    function ownerMintUsingTokenId(
-        IRuniverseLand.PlotSize plotSize,
-        uint256 tokenId,
-        address recipient
-    ) public onlyOwner {
-        _mintTokensUsingTokenId(plotSize, tokenId, recipient);
-    }
-
-    function ownerGetNextTokenId(IRuniverseLand.PlotSize plotSize) private view returns (uint256) {
-        uint256 globalCounter = plotsMinted[0] + plotsMinted[1] + plotsMinted[2] + plotsMinted[3] + plotsMinted[4] + plotGlobalOffset;
-        uint256 localCounter  = plotsMinted[uint256(plotSize)] + plotSizeLocalOffset[uint256(plotSize)];
-        require( localCounter <= 4294967295, "Local index overflow" );
-        require( uint256(plotSize) <= 255, "Plot index overflow" );
-        
-        return (globalCounter<<40) + (localCounter<<8) + uint256(plotSize);
     }
 
     /**
@@ -404,18 +281,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         vault = _newVaultAddress;
     }
 
-    function setGlobalIdOffset(uint256 _newGlobalIdOffset) public onlyOwner {
+    function setTokenIdOffset(uint256 _newTokenIdOffset) public onlyOwner {
         require(!mintlistStarted(), "Can't change during mint");
-        plotGlobalOffset = _newGlobalIdOffset;
-    }
-
-    function setLocalIdOffsets(uint256[] memory _newPlotSizeLocalOffset) public onlyOwner {
-        require(
-            _newPlotSizeLocalOffset.length == 5,
-            "must set exactly 5 numbers"
-        );
-        require(!mintlistStarted(), "Can't change during mint");
-        plotSizeLocalOffset = _newPlotSizeLocalOffset;
+        tokenIdOffset = _newTokenIdOffset;
     }
 
     function setPlotsAvailablePerSize(
