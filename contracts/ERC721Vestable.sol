@@ -15,13 +15,15 @@ abstract contract ERC721Vestable is ERC721 {
     bool public vestingEnabled = true;
 
     /// @notice the tokens from 0 to lastVestedTokenId will vest over time
-    uint256 public lastVestingTokenId = 10000;
+    uint256 public lastVestingGlobalId = 10000;
 
     /// @notice the time the vesting started
-    uint256 public vestingStart = 1640995200; // January 1st, 2022
+    uint256 public vestingStart = 1668142800; // January 1st, 2022
 
     /// @notice the time the vesting ends
-    uint256 public vestingEnd = 1704067200; // January 1st, 2024
+    uint256 public vestingEnd = 1668142920; // January 1st, 2024
+
+
 
     /**
      * @dev See {ERC721-_beforeTokenTransfer}.
@@ -33,37 +35,57 @@ abstract contract ERC721Vestable is ERC721 {
         uint256 tokenId
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, tokenId);
-
+        uint256 globalId = getGlobalId(tokenId);
         if (
             vestingEnabled &&
             from != address(0) && // minting
-            tokenId < lastVestingTokenId &&
+            globalId < lastVestingGlobalId &&
             block.timestamp < vestingEnd
         ) {
             uint256 vestingDuration = vestingEnd - vestingStart;
-            uint256 chunk = vestingDuration / lastVestingTokenId;
+            uint256 chunk = vestingDuration / lastVestingGlobalId;
             require(
-                block.timestamp >= (chunk * tokenId) + vestingStart,
+                block.timestamp >= (chunk * globalId) + vestingStart,
                 "Not vested"
             );
         }
+
+        /*
+        //Assing the tokenId to the new owner adress and add it to the new owner wallet array
+        tokenIdtoAddress[uint256(tokenId)] = to;
+        addressToTokenIdArray[to].push(tokenId);
+
+        //Find the tokenId index in the previews owner wallet array
+        uint index = 0;
+        for(uint i=0; i<addressToTokenIdArray.length; i++) {
+            if(addressToTokenIdArray[from][0] == tokenId){
+                index = i;
+                break;
+            } 
+        }        
+        //Move the contet of the last position of the array on the index position then pop to remove it
+        addressToTokenIdArray[from][index] = addressToTokenIdArray[from][addressToTokenIdArray.length - 1];
+        addressToTokenIdArray[from].pop();
+        */
+        
     }
 
     function isVestingToken(uint256 tokenId) public view returns (bool) {
-        return tokenId < lastVestingTokenId;
+        return tokenId < lastVestingGlobalId;
     }
 
-    function vestsAt(uint256 tokenId) public view returns (uint256) {
+    function vestsAt(uint256 globalId) public view returns (uint256) {
         uint256 vestingDuration = vestingEnd - vestingStart;
-        uint256 chunk = vestingDuration / lastVestingTokenId;
-        return (chunk * tokenId) + vestingStart;
+        uint256 chunk = vestingDuration / lastVestingGlobalId;
+        return (chunk * globalId) + vestingStart;
     }
 
     function isVested(uint256 tokenId) public view returns (bool) {
+        uint256 globalId = getGlobalId(tokenId);
         if (!vestingEnabled) return true;
-        if (tokenId > lastVestingTokenId) return true;
+        if (globalId > lastVestingGlobalId) return true;
         if (block.timestamp > vestingEnd) return true;
-        return block.timestamp >= vestsAt(tokenId);
+        return block.timestamp >= globalId;
     }
 
     /**
@@ -76,9 +98,9 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the last vesting token Id
      */
-    function _setLastVestingTokenId(uint256 _newTokenId) internal virtual {
+    function _setLastVestingGlobalId(uint256 _newTokenId) internal virtual {
         require(_newTokenId > 0, "Must be greater than zero");
-        lastVestingTokenId = _newTokenId;
+        lastVestingGlobalId = _newTokenId;
     }
 
     /**
@@ -98,4 +120,12 @@ abstract contract ERC721Vestable is ERC721 {
         );
         vestingEnd = _newVestingEnd;
     }
+
+    /**
+     * @notice extracts global id from token id
+     */
+    function getGlobalId(uint256 tokenId) public pure returns (uint256) {
+        return tokenId>>40;
+    }
+
 }
