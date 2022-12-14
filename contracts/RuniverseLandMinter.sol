@@ -20,11 +20,11 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     address payable public vault;
 
     uint256[] public plotsAvailablePerSize = [
-        8000, // 8x8
-        1000, // 16x16
-        100, // 32x32
-        10, // 64x64
-        0 // 128x128
+        52500, // 8x8
+        16828, // 16x16
+        560, // 32x32
+        105, // 64x64
+        7 // 128x128
     ];
 
     uint256[] public plotSizeLocalOffset = [
@@ -38,10 +38,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     uint256 public plotGlobalOffset = 1;
 
     uint256[] public plotPrices = [
-        0.12 ether,
-        0.33 ether,
-        5 ether,
-        8 ether,
+        0.3659 ether,
+        1.0063 ether,
+        15.2469 ether,
+        24.3951 ether,
         type(uint256).max
     ];
 
