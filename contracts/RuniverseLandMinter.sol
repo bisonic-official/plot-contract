@@ -69,14 +69,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     mapping(address => mapping(uint256 => uint256))
         public claimlistMintedPerSize;
 
-     //msc: deprecated, now the query is made with the ERC721 events
-    /// @notice stores the current ownder address of a tokenId
-    //mapping(uint256 => address) public tokenIdtoAddress;
-
-    //msc: deprecated, now the query is made with the ERC721 events
-    /// @notice stores the list of tokenId's that an address currently owns
-    //mapping(address => uint256[]) addressToTokenIdArray;
-
     /**
      * @dev Create the contract and set the initial baseURI
      * @param _runiverseLand address the initial base URI for the token metadata URL
@@ -106,16 +98,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         return plotPrices;
     }
 
-    //msc: deprecated, now the query is made with the ERC721 events
-    /*function getOwnerByPlot(uint256 tokenId) public view returns (address) {
-        return tokenIdtoAddress[tokenId];
+    function getTokenIdPlotType(uint256 tokenId) public pure returns (uint256) {
+        return tokenId&255;
     }
-
-    function getPlotsByOwner(address walletAddress) public view returns (uint256[] memory) {
-        return addressToTokenIdArray[walletAddress];
-    }*/
-
-
 
 
     function getTotalMintedLands() public view returns (uint256) {
@@ -289,14 +274,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         for (uint256 i = 0; i < numPlots; i++) {
 
             uint256 tokenId = ownerGetNextTokenId(plotSize);            
-            plotsMinted[uint256(plotSize)] += 1;
-
-            //Do we want to pay this GAS? 
-            //msc attention here:
-            //investigate if there is something in the standard, with openzeppeling
-            //msc: managed to obtain tokens with the ERC721 events
-            //tokenIdtoAddress[uint256(tokenId)] = recipient;
-            //addressToTokenIdArray[recipient].push(tokenId);            
+            plotsMinted[uint256(plotSize)] += 1;          
                
             runiverseLand.mintTokenId(recipient, tokenId, plotSize);
         }        
@@ -329,10 +307,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         );
 
         plotsMinted[uint256(plotSize)] += 1;
-
-        //msc: deprecated, now the query is made with the ERC721 events
-        //tokenIdtoAddress[uint256(tokenId)] = recipient;
-        //addressToTokenIdArray[recipient].push(tokenId);
 
 
         runiverseLand.mintTokenId(recipient, tokenId, plotSize);

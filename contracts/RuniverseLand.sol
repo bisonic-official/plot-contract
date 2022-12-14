@@ -51,9 +51,6 @@ contract RuniverseLand is
     /// @notice The base URI for the metadata of the tokens
     string public baseTokenURI;
 
-    /// @notice Maps tokenId to PlotSize
-    /// @dev TODO - do we want to pay for the gas to do this?
-    mapping(uint256 => PlotSize) public plotSizes;
 
 
 
@@ -98,8 +95,7 @@ contract RuniverseLand is
             "Not a minter"
         );
         numMinted += 1;
-        emit LandMinted(recipient, tokenId, size);
-        plotSizes[tokenId] = size; // TODO decide        
+        emit LandMinted(recipient, tokenId, size);    
         
         _mint(recipient, tokenId);
     }

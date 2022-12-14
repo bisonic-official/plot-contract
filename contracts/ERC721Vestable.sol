@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 abstract contract ERC721Vestable is ERC721 {
     /// @notice master switch for vesting
@@ -39,7 +38,7 @@ abstract contract ERC721Vestable is ERC721 {
         if (
             vestingEnabled &&
             from != address(0) && // minting
-            globalId < lastVestingGlobalId &&
+            globalId <= lastVestingGlobalId &&
             block.timestamp < vestingEnd
         ) {
             uint256 vestingDuration = vestingEnd - vestingStart;
@@ -49,29 +48,11 @@ abstract contract ERC721Vestable is ERC721 {
                 "Not vested"
             );
         }
-
-        /*
-        //Assing the tokenId to the new owner adress and add it to the new owner wallet array
-        tokenIdtoAddress[uint256(tokenId)] = to;
-        addressToTokenIdArray[to].push(tokenId);
-
-        //Find the tokenId index in the previews owner wallet array
-        uint index = 0;
-        for(uint i=0; i<addressToTokenIdArray.length; i++) {
-            if(addressToTokenIdArray[from][0] == tokenId){
-                index = i;
-                break;
-            } 
-        }        
-        //Move the contet of the last position of the array on the index position then pop to remove it
-        addressToTokenIdArray[from][index] = addressToTokenIdArray[from][addressToTokenIdArray.length - 1];
-        addressToTokenIdArray[from].pop();
-        */
         
     }
 
     function isVestingToken(uint256 tokenId) public view returns (bool) {
-        return tokenId < lastVestingGlobalId;
+        return tokenId <= lastVestingGlobalId;
     }
 
     function vestsAt(uint256 globalId) public view returns (uint256) {
