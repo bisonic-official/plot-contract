@@ -5,7 +5,7 @@ type MintRequirement = { address: string, plot_type: number };
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
 const MINT_LIST_START = 0;
-const MINT_LIST_END = 10000;
+const MINT_LIST_END = 10924;
 
 async function private_mint() {
 
@@ -15,7 +15,7 @@ async function private_mint() {
     let rows = data.split("\r\n");
     for (let row of rows) {
         let data_row = row.split(",");
-        for(let plot_id = 0 ; plot_id< 3; plot_id++ ){
+        for(let plot_id = 0 ; plot_id< 5; plot_id++ ){
             const number_plots = Number(data_row[plot_id + 1]);
             for( let mint_id = 0 ;  mint_id < number_plots; mint_id ++){
                 list_to_mint.push( {address : data_row[0], plot_type : plot_id} );
@@ -42,7 +42,7 @@ async function private_mint() {
     for(let r =  from_id ; r <=  to_id; r++ ){
         const mint_request = shuffled_list_to_mint[r]
         console.log('Trying to mint', r, mint_request);
-        await runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address);
+        await runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000});
     }
 
     //Search for events to know minted plots

@@ -202,7 +202,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev public method  for public minting.
      * @param plotSize PlotSize enum with plot size.
      * @param numPlots uint256 number of plots to be minted.     
-     * @return mint bool success mint.
      */
     function mint(IRuniverseLand.PlotSize plotSize, uint256 numPlots)
         public
@@ -220,7 +219,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param numPlots uint256 number of plots to be minted. 
      * @param claimedMaxPlots uint256 maximum number of plots of plotSize size  that the address mint.
      * @param _merkleProof bytes32[] merkle proof.
-     * @return mintlisted bool success mint.
      */
     function mintlistMint(
         IRuniverseLand.PlotSize plotSize,
@@ -262,7 +260,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param numPlots uint256 number of plots to be minted. 
      * @param claimedMaxPlots uint256 maximum number of plots of plotSize size  that the address mint.
      * @param _merkleProof bytes32[] merkle proof.
-     * @return mintlisted bool success mint.
      */
     function claimlistMint(
         IRuniverseLand.PlotSize plotSize,
