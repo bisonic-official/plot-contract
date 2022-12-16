@@ -1,7 +1,7 @@
 
 # Overview
 
-This contract mints plots (lands) for a video game. The plot TokenId represents the consecutive minted number of each size (explained in the **TokenId** section). There are 5 plot sizes:
+This contract mints plots of land for Forgotten Runiverse, an MMO based on the Forgotten Runes IP. The plot TokenId represents both the identity of the plot and the type of plot (explained in the **TokenId** section). There are 5 plot sizes:
 
 * 8x8
 * 16x16
@@ -11,17 +11,17 @@ This contract mints plots (lands) for a video game. The plot TokenId represents 
 
 There are 4 phases:
 
-* Investors minting:
+* Private sale minting:
     * At the beginning, 10924 plots will be minted and distributed to investors. Those plots will be transfer timelocked, explained in the **Vesting** section. A csv table with wallets and a number of plots of each size will be used. Owner wallet will pay all the gas cost.
-    * This is the only moment when plots of 128x128 are minted/distributed.
+    * Note that 128x128 plots are not intended to be available during the public sale. Only 1 128x128 is minted during the private sale. The rest are intended for auction at a later date.
 * Claim list:
     * A whitelist of addresses that will be able to claim plots. This whitelist is stored in a Merkle tree and it includes the amount of plots of each size the address can claim. There is no plot cost, only gas cost for the address.
 * Mint list:
     * A whitelist of addresses that will be able to buy plots before the public sale. This whitelist is stored in a Merkle tree and it includes the amount of plots of each size the address can buy. The address has to pay the plot cost and gas cost.
 * Public mint:
-    * Any wallet can buy a plot.
+    * Any wallet can buy plots.
 
-The plots information is not defined yet, so all the information needed to map the plot information later is masked in the TokenId (explained in the **TokenId** section).
+Plot properties are defined on the game server. The TokenId is meant to uniquely identify the type and identity of plot for interoperability with the game server, which assigns properties (explained in the **TokenId** section). 
 
 # Scope
 
