@@ -78,31 +78,59 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         setVaultAddress(payable(msg.sender));
     }
 
+    /**
+     * @dev returns true if the whitelisted mintlist started.
+     * @return mintlistStarted true if mintlist started.
+     */
     function mintlistStarted() public view returns (bool) {
         return block.timestamp >= mintlistStartTime;
     }
 
+    /**
+     * @dev returns true if the whitelisted claimlist started.
+     * @return mintlistStarted true if claimlist started.
+     */
     function claimsStarted() public view returns (bool) {
         return block.timestamp >= claimsStartTime;
     }
 
+    /**
+     * @dev returns true if the public minting started.
+     * @return mintlistStarted true if public minting started.
+     */
     function publicStarted() public view returns (bool) {
         return block.timestamp >= publicMintStartTime;
     }
 
+    /**
+     * @dev returns how many plots were avialable since the begining.
+     * @return getPlotsAvailablePerSize array uint256 of 5 elements.
+     */
     function getPlotsAvailablePerSize() public view returns (uint256[] memory) {
         return plotsAvailablePerSize;
     }
 
+    /**
+     * @dev returns the eth cost of each plot.
+     * @return getPlotPrices array uint256 of 5 elements.
+     */
     function getPlotPrices() public view returns (uint256[] memory) {
         return plotPrices;
     }
 
+    /**
+     * @dev returns the plot type of a token id.
+     * @param tokenId uint256 token id.
+     * @return getPlotPrices uint256 plot type.
+     */
     function getTokenIdPlotType(uint256 tokenId) public pure returns (uint256) {
         return tokenId&255;
     }
 
-
+    /**
+     * @dev return the total number of minted plots
+     * @return getTotalMintedLands uint256 number of minted plots.
+     */
     function getTotalMintedLands() public view returns (uint256) {
         uint256 totalMintedLands;
         totalMintedLands =  plotsMinted[0] +
@@ -113,6 +141,11 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         return totalMintedLands;                                                        
     }
     
+    /**
+     * @dev return the total number of minted plots of each size.
+     * @return getTotalMintedLandsBySize array uint256 number of minted plots of each size.
+     */
+
     function getTotalMintedLandsBySize() public view returns (uint256[] memory) {
         uint256[] memory plotsMintedBySize = new uint256[](5);
 
@@ -125,6 +158,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         return plotsMintedBySize;
     }
 
+    /**
+     * @dev returns the number of plots left of each size.
+     * @return getAvailableLands array uint256 of 5 elements.
+     */
     function getAvailableLands() public view returns (uint256[] memory) {
         uint256[] memory plotsAvailableBySize = new uint256[](5);
 
@@ -137,6 +174,13 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         return plotsAvailableBySize;
     }    
 
+    /**
+     * @dev mint public method to mint when the whitelist (mintlist) is active.
+     * @param _who address address that is minting. 
+     * @param _leaf bytes32 merkle leaf.
+     * @param _merkleProof bytes32[] merkle proof.
+     * @return mintlisted bool success mint.
+     */
     function mintlisted(
         address _who,
         bytes32 _leaf,
@@ -155,7 +199,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     }
 
     /**
-     * Minting
+     * @dev public method  for public minting.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted.     
+     * @return mint bool success mint.
      */
     function mint(IRuniverseLand.PlotSize plotSize, uint256 numPlots)
         public
@@ -167,6 +214,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
+    /**
+     * @dev public method to mint when the whitelist (mintlist) is active.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted. 
+     * @param claimedMaxPlots uint256 maximum number of plots of plotSize size  that the address mint.
+     * @param _merkleProof bytes32[] merkle proof.
+     * @return mintlisted bool success mint.
+     */
     function mintlistMint(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
@@ -185,9 +240,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 claimedMaxPlots
             )
         );
-        
-        //Plain only wallet white list 
-        //bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
 
         require(
             MerkleProof.verify(_merkleProof, mintlistMerkleRoot1, _leaf) ||
@@ -204,6 +256,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
+    /**
+     * @dev public method to claim a plot, only when (claimlist) is active.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted. 
+     * @param claimedMaxPlots uint256 maximum number of plots of plotSize size  that the address mint.
+     * @param _merkleProof bytes32[] merkle proof.
+     * @return mintlisted bool success mint.
+     */
     function claimlistMint(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
@@ -222,10 +282,6 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 claimedMaxPlots
             )
         );
-        
-        
-        //Plain only wallet white list 
-        //bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
 
         require(
             MerkleProof.verify(_merkleProof, claimlistMerkleRoot, _leaf),
@@ -241,6 +297,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         _mintTokens(plotSize, numPlots, msg.sender);
     }
 
+    /**
+     * @dev checks if the amount sent is correct. Continue minting if it is correct.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted. 
+     * @param recipient address  address that sent the mint.          
+     */
     function _mintTokensCheckingValue(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
@@ -255,7 +317,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     }
 
 
-
+    /**
+     * @dev checks if there are plots available. Final step before sending it to RuniverseLand contract.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted. 
+     * @param recipient address  address that sent the mint.          
+     */
     function _mintTokens(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
@@ -280,6 +347,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         }        
     }
 
+    /**
+     * @dev Method to mint a plot and assign it to an address without any requirement. Used for private minting.
+     * @param plotSize PlotSize enum with plot size.
+     * @param numPlots uint256 number of plots to be minted. 
+     * @param recipient address  address that sent the mint.          
+     */
     function ownerMint(
         IRuniverseLand.PlotSize plotSize,
         uint256 numPlots,
@@ -288,7 +361,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         _mintTokens(plotSize, numPlots, recipient);
     }
 
-//msc: Be careful with thie one, will break order.
+    //msc: Be careful with thie one, will break order.
     function _mintTokensUsingTokenId(
         IRuniverseLand.PlotSize plotSize,
         uint256 tokenId,
@@ -313,7 +386,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     }
 
 
-//msc: Be careful with this one, will break order.
+    //msc: Be careful with this one, will break order.
     function ownerMintUsingTokenId(
         IRuniverseLand.PlotSize plotSize,
         uint256 tokenId,
@@ -321,7 +394,11 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     ) public onlyOwner {
         _mintTokensUsingTokenId(plotSize, tokenId, recipient);
     }
-
+    /**
+     * @dev Encodes the next token id.
+     * @param plotSize PlotSize enum with plot size.
+     * @return ownerGetNextTokenId uint256 encoded next toknId.
+     */
     function ownerGetNextTokenId(IRuniverseLand.PlotSize plotSize) private view returns (uint256) {
         uint256 globalCounter = plotsMinted[0] + plotsMinted[1] + plotsMinted[2] + plotsMinted[3] + plotsMinted[4] + plotGlobalOffset;
         uint256 localCounter  = plotsMinted[uint256(plotSize)] + plotSizeLocalOffset[uint256(plotSize)];
@@ -334,6 +411,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     /**
      * Owner Controls
      */
+    /**
+     * @dev Assigns a new public start minting time.
+     * @param _newPublicMintStartTime uint256 echo time in seconds.     
+     */
     function setPublicMintStartTime(uint256 _newPublicMintStartTime)
         public
         onlyOwner
@@ -341,6 +422,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         publicMintStartTime = _newPublicMintStartTime;
     }
 
+    /**
+     * @dev Assigns a new mintlist start minting time.
+     * @param _newAllowlistMintStartTime uint256 echo time in seconds.     
+     */
     function setMintlistStartTime(uint256 _newAllowlistMintStartTime)
         public
         onlyOwner
@@ -348,22 +433,42 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         mintlistStartTime = _newAllowlistMintStartTime;
     }
 
+    /**
+     * @dev Assigns a new claimlist start minting time.
+     * @param _newClaimsStartTime uint256 echo time in seconds.     
+     */
     function setClaimsStartTime(uint256 _newClaimsStartTime) public onlyOwner {
         claimsStartTime = _newClaimsStartTime;
     }
 
+    /**
+     * @dev Assigns a merkle root to the main tree for mintlist.
+     * @param newMerkleRoot bytes32 merkle root
+     */
     function setMintlistMerkleRoot1(bytes32 newMerkleRoot) public onlyOwner {
         mintlistMerkleRoot1 = newMerkleRoot;
     }
 
+    /**
+     * @dev Assigns a merkle root to the second tree for mintlist. Used for double buffer.
+     * @param newMerkleRoot bytes32 merkle root
+     */
     function setMintlistMerkleRoot2(bytes32 newMerkleRoot) public onlyOwner {
         mintlistMerkleRoot2 = newMerkleRoot;
     }
 
+    /**
+     * @dev Assigns a merkle root to the main tree for claimlist.
+     * @param newMerkleRoot bytes32 merkle root
+     */
     function setClaimlistMerkleRoot(bytes32 newMerkleRoot) public onlyOwner {
         claimlistMerkleRoot = newMerkleRoot;
     }
 
+    /**
+     * @dev Assigns the main contract.
+     * @param _newRuniverseLandAddress IRuniverseLand Main contract.
+     */
     function setRuniverseLand(IRuniverseLand _newRuniverseLandAddress)
         public
         onlyOwner
@@ -371,6 +476,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         runiverseLand = _newRuniverseLandAddress;
     }
 
+    /**
+     * @dev Assigns the vault address.
+     * @param _newVaultAddress address vault address.
+     */
     function setVaultAddress(address payable _newVaultAddress)
         public
         onlyOwner
@@ -378,11 +487,19 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         vault = _newVaultAddress;
     }
 
+    /**
+     * @dev Assigns the offset to the global ids. This value will be added to the global id when a token is generated.
+     * @param _newGlobalIdOffset uint256 offset
+     */
     function setGlobalIdOffset(uint256 _newGlobalIdOffset) public onlyOwner {
         require(!mintlistStarted(), "Can't change during mint");
         plotGlobalOffset = _newGlobalIdOffset;
     }
 
+    /**
+     * @dev Assigns the offset to the local ids. This value will be added to the local id of each plot size  when a token of some size is generated.
+     * @param _newPlotSizeLocalOffset uint256[] offsets
+     */
     function setLocalIdOffsets(uint256[] memory _newPlotSizeLocalOffset) public onlyOwner {
         require(
             _newPlotSizeLocalOffset.length == 5,
@@ -392,9 +509,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         plotSizeLocalOffset = _newPlotSizeLocalOffset;
     }
 
+    /**
+     * @dev Assigns the new number of available plots of each size.
+     * @param _newPlotsAvailablePerSize uint256[] available plots
+     */
     function setPlotsAvailablePerSize(
         uint256[] memory _newPlotsAvailablePerSize
     ) public onlyOwner {
+        //msc: should we make sure all the numbres are equal or greater?
         require(
             _newPlotsAvailablePerSize.length == 5,
             "must set exactly 5 numbers"
@@ -402,6 +524,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         plotsAvailablePerSize = _newPlotsAvailablePerSize;
     }
 
+    /**
+     * @dev Assigns the new plot prices for each plot size.
+     * @param _newPrices uint256[] plots prices.
+     */
     function setPrices(uint256[] calldata _newPrices) public onlyOwner {
         require(!mintlistStarted(), "Can't change during mint");
         require(_newPrices.length == 5, "must set exactly 5 prices");
@@ -417,11 +543,19 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         vault.sendValue(_amount);
     }
 
+    /**
+     * @notice Withdraw all the funds to the vault using sendValue     
+     */
     function withdrawAll() public onlyOwner {
         require(address(vault) != address(0), "no vault");
         vault.sendValue(address(this).balance);
     }
 
+    /**
+     * @notice Transfer amount to a token.
+     * @param _token IERC20 token to transfer
+     * @param _amount uint256 amount to transfer
+     */
     function forwardERC20s(IERC20 _token, uint256 _amount) public onlyOwner {
         require(address(msg.sender) != address(0), "req sender");
         _token.transfer(msg.sender, _amount);

@@ -50,17 +50,26 @@ abstract contract ERC721Vestable is ERC721 {
         }
         
     }
-
+    /**
+     * @notice returns true if a tokenId has besting property.
+     */
     function isVestingToken(uint256 tokenId) public view returns (bool) {
-        return tokenId <= lastVestingGlobalId;
+        uint256 globalId = getGlobalId(tokenId);
+        return globalId <= lastVestingGlobalId;
     }
-
-    function vestsAt(uint256 globalId) public view returns (uint256) {
+    /**
+     * @notice returns the time when a tokenId will be vested.
+     */
+    function vestsAt(uint256 tokenId) public view returns (uint256) {
+        uint256 globalId = getGlobalId(tokenId);
         uint256 vestingDuration = vestingEnd - vestingStart;
         uint256 chunk = vestingDuration / lastVestingGlobalId;
         return (chunk * globalId) + vestingStart;
     }
 
+    /**
+     * @notice returns true if a tokenId is already vested.
+     */
     function isVested(uint256 tokenId) public view returns (bool) {
         uint256 globalId = getGlobalId(tokenId);
         if (!vestingEnabled) return true;

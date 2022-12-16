@@ -83,6 +83,7 @@ contract RuniverseLand is
      * @notice Mint a new token with a specific id
      * @param recipient address representing the owner of the new tokenId
      * @param tokenId uint256 ID of the token to be minted
+     * @param size PlotSize size to be minted.
      */
     function mintTokenId(
         address recipient,
@@ -99,6 +100,13 @@ contract RuniverseLand is
         
         _mint(recipient, tokenId);
     }
+
+    /**
+     * @notice Mint a new tokens with a specific id
+     * @param recipient address representing the owner of the new tokenId
+     * @param tokenIds array uint256 IDs of the tokens to be minted
+     * @param size PlotSize size to be minted.
+     */
 
     function mintManyTokenIds(
         address recipient,
@@ -139,10 +147,18 @@ contract RuniverseLand is
         return _exists(tokenId);
     }
 
+    /**
+     * @dev Returns the base uri of the token.
+     * @return _baseURI string prefix uri. 
+     */
     function _baseURI() internal view virtual override returns (string memory) {
         return baseTokenURI;
     }
 
+    /**
+     * @dev Returns the total number of minted lands.
+     * @return totalSupply uint256 the number of minted lands.
+     */
     function totalSupply() public view returns (uint256) {
         return numMinted;
     }
