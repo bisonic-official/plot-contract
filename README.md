@@ -185,3 +185,7 @@ For the final private minting with vesting, 10924 plots will be minted and the v
     * Two addresses will be printed. RuniverseLand address and RuniverseLandMinter address.
 1. Modify runiverseMinterContractAddress and runiverseContractAddress in scripts/private_mint.ts with the new addresses. 
 1. Run in the original terminal `npx hardhat run scripts/vesting.ts --network localhost` to 
+
+
+
+NOTE: Slither does not currently work on the repo. If you find a workaround, please share in the discord.
