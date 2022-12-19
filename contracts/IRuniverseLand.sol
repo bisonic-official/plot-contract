@@ -24,10 +24,4 @@ interface IRuniverseLand {
         uint256 tokenId,
         PlotSize size
     ) external;
-
-    function mintManyTokenIds(
-        address recipient,
-        uint256[] memory tokenIds,
-        PlotSize size
-    ) external;
 }

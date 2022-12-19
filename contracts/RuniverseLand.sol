@@ -101,22 +101,6 @@ contract RuniverseLand is
         _mint(recipient, tokenId);
     }
 
-    /**
-     * @notice Mint a new tokens with a specific id
-     * @param recipient address representing the owner of the new tokenId
-     * @param tokenIds array uint256 IDs of the tokens to be minted
-     * @param size PlotSize size to be minted.
-     */
-
-    function mintManyTokenIds(
-        address recipient,
-        uint256[] memory tokenIds,
-        PlotSize size
-    ) public override {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            mintTokenId(recipient, tokenIds[i], size);
-        }
-    }
 
     /**
      * @dev Returns the URL of a given tokenId
@@ -234,7 +218,7 @@ contract RuniverseLand is
      * @param amount uint256 the amount to send
      */
     function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
-        require(address(msg.sender) != address(0));
+        require(address(msg.sender) != address(0), "req sender");
         token.transfer(msg.sender, amount);
     }
 }

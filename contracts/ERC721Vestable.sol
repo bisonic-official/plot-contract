@@ -75,7 +75,7 @@ abstract contract ERC721Vestable is ERC721 {
         if (!vestingEnabled) return true;
         if (globalId > lastVestingGlobalId) return true;
         if (block.timestamp > vestingEnd) return true;
-        return block.timestamp >= globalId;
+        return block.timestamp >= vestsAt(tokenId);
     }
 
     /**
