@@ -26,22 +26,46 @@ Plot properties are defined on the game server. The TokenId is meant to uniquely
 # Scope
 
 
-| Contract/Script | SLOC | Purpose | Libraries used |  
-| ----------- | ----------- | ----------- | ----------- |
-| contracts/IRuniverseLand.sol | 33 | Interface for the main contract ( RuniverseLand.sol )  | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
-| contracts/RuniverseLand.sol | 224 | Contract in charge of minting. This contract contains all the tokens. This contract stores the URI and vesting initial values. A minter contract is attached to this contract. | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
-| contracts/RuniverseLandMinter.sol | 429 | Contract in charge of receiving the mint requests. This contract validates all the rules ( owner plot, mint list, claim list and public mint ). | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
-| contracts/ERC721Vestable.sol | 112 | ERC721 class with a _beforeTokenTransfer modification. A vesting property is implemented, so the plots can't be transferred until a certain time is reached. | [`@openzeppelin/*`](https://openzeppelin.com/contracts/) |
-| scripts/deploy.ts | 50 | Script in charge of deploying the contract. | [`@openzeppelin/*`](https://openzeppelin.com/contracts/), [`hardhat`](https://www.npmjs.com/package/hardhat), [`chai`](https://www.npmjs.com/package/chai) |
-| scripts/private_mint.ts | 113 | Script to mint the initial investors plots. 10924 plots will be distributed at the beginning. As there is a vesting property to those plots, the plots minting order is randomized uniformly, so the transfer unlock time is fair to everybody. |  |
-| scripts/private_plots.csv | 2 | List of wallets, each row specifies how many plots of each size should be minted : [8x8, 16x16, 32x32, 64x64, 128x128]. | [`@openzeppelin/*`](https://openzeppelin.com/contracts/), [`hardhat`](https://www.npmjs.com/package/hardhat), [`chai`](https://www.npmjs.com/package/chai) |
-| test/unitTests.ts | 227 | Unit tests for deploy, getters/setters, mint, mint list whitelist and vesting. | [`@openzeppelin/*`](https://openzeppelin.com/contracts/), [`hardhat`](https://www.npmjs.com/package/hardhat), [`chai`](https://www.npmjs.com/package/chai) |
+### Files in scope
+|File|SLOC|Description|Libraries|
+|:-|:-:|:-|:-|
+|_Contracts (2)_|
+|[contracts/RuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLand.sol) [💰](#nowhere "Payable Functions") [📤](#nowhere "Initiates ETH Value Transfer")|108|Contract in charge of minting. This contract contains all the tokens. This contract stores the URI and vesting initial values. A minter contract is attached to this contract.| [`@openzeppelin/*`](https://openzeppelin.com/contracts/)|
+|[contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol) [💰](#nowhere "Payable Functions") [📤](#nowhere "Initiates ETH Value Transfer") [🧮](#nowhere "Uses Hash-Functions")|325|Contract in charge of receiving the mint requests. This contract validates all the rules (owner plot, mint list, claim list and public mint)| [`@openzeppelin/*`](https://openzeppelin.com/contracts/)|
+|_Abstracts (1)_|
+|[contracts/ERC721Vestable.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/ERC721Vestable.sol)|70|ERC721 class with a _beforeTokenTransfer modification. A vesting property is implemented, so the plots can't be transferred until a certain time is reached.| [`@openzeppelin/*`](https://openzeppelin.com/contracts/)|
+|_Interfaces (1)_|
+|[contracts/IRuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/IRuniverseLand.sol)|27|Interface for the main contract (RuniverseLand.sol)||
+|Total (over 4 files):| 530 ||
 
 
 
-## Out of scope
 
-* brownie-config.yaml
+## External imports
+* **@openzeppelin/contracts/access/Ownable.sol**
+  * [contracts/ERC721Vestable.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/ERC721Vestable.sol)
+  * [contracts/RuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLand.sol)
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/security/ReentrancyGuard.sol**
+  * [contracts/ERC721Vestable.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/ERC721Vestable.sol)
+  * [contracts/RuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLand.sol)
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/token/ERC20/IERC20.sol**
+  * [contracts/ERC721Vestable.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/ERC721Vestable.sol)
+  * [contracts/RuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLand.sol)
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/token/ERC721/ERC721.sol**
+  * [contracts/ERC721Vestable.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/ERC721Vestable.sol)
+  * [contracts/RuniverseLand.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLand.sol)
+* **@openzeppelin/contracts/utils/Address.sol**
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol**
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/utils/cryptography/ECDSA.sol**
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+* **@openzeppelin/contracts/utils/cryptography/MerkleProof.sol**
+  * [contracts/RuniverseLandMinter.sol](https://github.com/code-423n4/2022-12-forgotten-runiverse/blob/master/contracts/RuniverseLandMinter.sol)
+
 
 # Additional Context
 
@@ -123,7 +147,6 @@ For the final private minting with vesting, 10924 plots will be minted and the v
 ```
 
 # Tests
-
 ## Environment
 
 * Maker sure you have the following environment:
@@ -147,12 +170,15 @@ For the final private minting with vesting, 10924 plots will be minted and the v
         * Whitelisted in the unit test with 2 plots of 8x8 (plot index 0)
 * [`Hardhat environment setup`](https://hardhat.org/tutorial/setting-up-the-environment)
 
-##Run and Test
+## Quickstart command
+`rm -Rf 2022-12-forgotten-runiverse || true && git clone https://github.com/code-423n4/2022-12-forgotten-runiverse.git -j8 && cd 2022-12-forgotten-runiverse && nvm install 18.0 && npm install && npx hardhat compile && REPORT_GAS=true npx hardhat test`
+
+
+## Run and Test
 
 1. Clone the project in a new folder.
 1. Run `npm install` to install all the dependencies.
 1. Run `npx hardhat compile` to compile the contract.
-1. Run `npx hardhat test` to run the unit tests.
 1. Run `npx hardhat test` to run the unit tests.
 1. Open a new terminal and run `npx hardhat node` to start a node in localhost.
 1. Run in the original terminal `npx hardhat run scripts/desploy.ts --network localhost` to deploy the contract to the local network.
