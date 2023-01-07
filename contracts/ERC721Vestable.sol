@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 abstract contract ERC721Vestable is ERC721 {
     /// @notice master switch for vesting
-    bool public vestingEnabled = true;
+    uint256 public vestingEnabled = 1;
 
     /// @notice the tokens from 0 to lastVestedTokenId will vest over time
     uint256 public lastVestingGlobalId = 10924;
@@ -36,7 +36,7 @@ abstract contract ERC721Vestable is ERC721 {
         super._beforeTokenTransfer(from, to, tokenId);
         uint256 globalId = getGlobalId(tokenId);
         if (
-            vestingEnabled &&
+            vestingEnabled == 1 &&
             from != address(0) && // minting
             globalId <= lastVestingGlobalId &&
             block.timestamp < vestingEnd
@@ -72,7 +72,7 @@ abstract contract ERC721Vestable is ERC721 {
      */
     function isVested(uint256 tokenId) public view returns (bool) {
         uint256 globalId = getGlobalId(tokenId);
-        if (!vestingEnabled) return true;
+        if (vestingEnabled == 0) return true;
         if (globalId > lastVestingGlobalId) return true;
         if (block.timestamp > vestingEnd) return true;
         return block.timestamp >= vestsAt(tokenId);
@@ -81,7 +81,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the vesting toggle
      */
-    function _setVestingEnabled(bool _newVestingEnabled) internal virtual {
+    function _setVestingEnabled(uint256 _newVestingEnabled) internal virtual {
         vestingEnabled = _newVestingEnabled;
     }
 

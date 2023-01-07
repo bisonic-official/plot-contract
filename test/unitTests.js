@@ -76,7 +76,7 @@ describe("Setters and getters test", function () {
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
 
-        await hardhatRuniverseContract.setVestingEnabled( true );
+        await hardhatRuniverseContract.setVestingEnabled( 1 );
         await hardhatRuniverseContract.setLastVestingGlobalId( 5 );
 
         
@@ -163,7 +163,7 @@ describe("Mint Test", function () {
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
 
-        await hardhatRuniverseContract.setVestingEnabled( false );
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         await expect(hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Mint not started");        
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
@@ -225,7 +225,7 @@ describe("Mint Test", function () {
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListFarTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
 
-        await hardhatRuniverseContract.setVestingEnabled( false );
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         //Mint list have not started
         await expect(hardhatRuniverseMinterContract.mintlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Mint not started");
@@ -287,7 +287,7 @@ describe("Mint Test", function () {
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintListFarTime);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintClaimStartTime);
 
-        await hardhatRuniverseContract.setVestingEnabled( false );
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Claims not started"); 
 
@@ -378,7 +378,7 @@ describe("Mint Test", function () {
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
         await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
 
-        await hardhatRuniverseContract.setVestingEnabled( false );
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         //Public test
         const blockNumBeforePublic = await ethers.provider.getBlockNumber();
