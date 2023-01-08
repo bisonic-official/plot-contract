@@ -22,6 +22,14 @@ abstract contract ERC721Vestable is ERC721 {
     /// @notice the time the vesting ends
     uint256 public vestingEnd = 1734998400; // Dec 24th, 2024
 
+    /// Invalid Vesting Global Id, the gived Global ID : "`gived_global_id`" must be greater than 0
+    /// @param gived_global_id Global id.
+    error InvalidVestingGlobalId(uint256 gived_global_id);
+
+    /// Token Not Vested, The Vesting date is the next one `gived_global_id`
+    /// @param current_time Current time on chain.
+    /// @param token_vesting_time Vesting time.
+    error TokenNotVested(uint256 current_time,uint256 token_vesting_time);
 
 
     /**
@@ -43,10 +51,13 @@ abstract contract ERC721Vestable is ERC721 {
         ) {
             uint256 vestingDuration = vestingEnd - vestingStart;
             uint256 chunk = vestingDuration / lastVestingGlobalId;
-            require(
-                block.timestamp >= (chunk * globalId) + vestingStart,
-                "Not vested"
-            );
+
+            if(block.timestamp < (chunk * globalId) + vestingStart){
+                revert TokenNotVested({
+                    current_time: block.timestamp,
+                    token_vesting_time: (chunk * globalId) + vestingStart
+                });
+            }
         }
         
     }
@@ -89,7 +100,11 @@ abstract contract ERC721Vestable is ERC721 {
      * @notice set the last vesting token Id
      */
     function _setLastVestingGlobalId(uint256 _newTokenId) internal virtual {
-        require(_newTokenId > 0, "Must be greater than zero");
+        if(_newTokenId <= 0){
+            revert InvalidVestingGlobalId({
+                gived_global_id: _newTokenId
+            });
+        }
         lastVestingGlobalId = _newTokenId;
     }
 

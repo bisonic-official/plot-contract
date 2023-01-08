@@ -208,8 +208,15 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         payable
         nonReentrant
     {
-        require(publicStarted(), "Mint not started");
-        require(numPlots > 0 && numPlots <= 20, "Mint from 1 to 20 plots");        
+        if(!publicStarted()){
+            revert WrongDateForProcess({
+                correct_date: publicMintStartTime,
+                current_date: block.timestamp
+            });
+        }
+        if(numPlots <= 0 && numPlots > 20){
+            revert IncorrectPurchaseLimit();
+        }
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
@@ -226,8 +233,15 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         uint256 claimedMaxPlots,
         bytes32[] calldata _merkleProof
     ) public payable nonReentrant {
-        require(mintlistStarted(), "Mint not started");
-        require(numPlots > 0 && numPlots <= 20, "Mint from 1 to 20 plots");
+        if(!mintlistStarted()){
+            revert WrongDateForProcess({
+                correct_date:mintlistStartTime,
+                current_date: block.timestamp
+            });
+        }
+        if(numPlots <= 0 && numPlots > 20){
+            revert IncorrectPurchaseLimit();
+        }
         // verify allowlist        
         bytes32 _leaf = keccak256(
             abi.encodePacked(
@@ -267,7 +281,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         uint256 claimedMaxPlots,
         bytes32[] calldata _merkleProof
     ) public payable nonReentrant {
-        require(claimsStarted(), "Claims not started");
+        if(!claimsStarted()){
+            revert WrongDateForProcess({
+                correct_date:claimsStartTime,
+                current_date: block.timestamp
+            });
+        }
 
         // verify allowlist                
         bytes32 _leaf = keccak256(
@@ -305,7 +324,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         uint256 numPlots,
         address recipient
     ) private {
-        require(plotPrices[uint256(plotSize)] > 0, "Misconfigured prices");
+        if(plotPrices[uint256(plotSize)] <= 0){
+            revert MisconfiguredPrices();
+        }
         require(
             msg.value == plotPrices[uint256(plotSize)] * numPlots,
             "Ether value sent is not accurate"
@@ -489,7 +510,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param _newGlobalIdOffset uint256 offset
      */
     function setGlobalIdOffset(uint256 _newGlobalIdOffset) public onlyOwner {
-        require(!mintlistStarted(), "Can't change during mint");
+        if(mintlistStarted()){
+            revert DeniedProcessDuringMinting();
+        }
         plotGlobalOffset = _newGlobalIdOffset;
     }
 
@@ -498,11 +521,15 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param _newPlotSizeLocalOffset uint256[] offsets
      */
     function setLocalIdOffsets(uint256[] memory _newPlotSizeLocalOffset) public onlyOwner {
-        require(
-            _newPlotSizeLocalOffset.length == 5,
-            "must set exactly 5 numbers"
-        );
-        require(!mintlistStarted(), "Can't change during mint");
+        if(_newPlotSizeLocalOffset.length < 5){
+            revert GivedValuesNotValid({
+                sended_values: _newPlotSizeLocalOffset.length,
+                expected: 5
+            });
+        }
+        if(mintlistStarted()){
+            revert DeniedProcessDuringMinting();
+        }
         plotSizeLocalOffset = _newPlotSizeLocalOffset;
     }
 
@@ -514,10 +541,12 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         uint256[] memory _newPlotsAvailablePerSize
     ) public onlyOwner {
         //msc: should we make sure all the numbres are equal or greater?
-        require(
-            _newPlotsAvailablePerSize.length == 5,
-            "must set exactly 5 numbers"
-        );
+        if(_newPlotsAvailablePerSize.length < 5){
+            revert GivedValuesNotValid({
+                sended_values: _newPlotsAvailablePerSize.length,
+                expected: 5
+            });
+        }
         plotsAvailablePerSize = _newPlotsAvailablePerSize;
     }
 
@@ -526,8 +555,15 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param _newPrices uint256[] plots prices.
      */
     function setPrices(uint256[] calldata _newPrices) public onlyOwner {
-        require(!mintlistStarted(), "Can't change during mint");
-        require(_newPrices.length == 5, "must set exactly 5 prices");
+        if(mintlistStarted()){
+            revert DeniedProcessDuringMinting();
+        }
+        if(_newPrices.length < 5){
+            revert GivedValuesNotValid({
+                sended_values: _newPrices.length,
+                expected: 5
+            });
+        }
         plotPrices = _newPrices;
     }
 
@@ -554,7 +590,30 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @param _amount uint256 amount to transfer
      */
     function forwardERC20s(IERC20 _token, uint256 _amount) public onlyOwner {
-        require(address(msg.sender) != address(0), "req sender");
+        if(address(msg.sender) == address(0)){
+            revert Address0Error();
+        }
         _token.transfer(msg.sender, _amount);
     }
+
+    /// Wrong date for process, Come back on `correct_data` for complete this successfully
+    /// @param correct_date date when the public/ mint is on.
+    /// @param current_date date when the process was executed.
+    error WrongDateForProcess(uint256 correct_date, uint256 current_date);
+
+    /// Denied Process During Minting
+    error DeniedProcessDuringMinting();
+
+    /// Incorrect Purchase Limit, the limits are from 1 to 20 plots
+    error IncorrectPurchaseLimit();
+
+    /// MisconfiguredPrices, the price of that land-size is not configured yet
+    error MisconfiguredPrices();
+
+    /// Configured Prices Error, please send exactly 5 values
+    /// @param sended_values Total gived values.
+    /// @param expected Total needed values.
+    error GivedValuesNotValid(uint256 sended_values, uint256 expected);
+
+    error Address0Error();
 }

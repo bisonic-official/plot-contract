@@ -51,6 +51,8 @@ contract RuniverseLand is
     /// @notice The base URI for the metadata of the tokens
     string public baseTokenURI;
 
+    error NoPlotsAvailable();
+    error Address0Error();
 
 
 
@@ -90,7 +92,9 @@ contract RuniverseLand is
         uint256 tokenId,
         PlotSize size
     ) public override nonReentrant {
-        require(numMinted < MAX_SUPPLY, "All land has been minted");
+        if(numMinted >= MAX_SUPPLY){
+            revert NoPlotsAvailable();
+        }
         require(
             _msgSender() == primaryMinter || _msgSender() == secondaryMinter,
             "Not a minter"
@@ -218,7 +222,9 @@ contract RuniverseLand is
      * @param amount uint256 the amount to send
      */
     function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
-        require(address(msg.sender) != address(0), "req sender");
+        if(address(msg.sender) == address(0)){
+            revert Address0Error();
+        }
         token.transfer(msg.sender, amount);
     }
 }
