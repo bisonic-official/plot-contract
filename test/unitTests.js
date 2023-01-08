@@ -270,7 +270,6 @@ describe("Mint Test", function () {
             expected_errors_interface.functions["WrongDateForProcess(uint256,uint256)"],
             e.data
           );
-          console.log(decoded.correct_date.value);
           expect( decoded.current_date.toNumber() < decoded.correct_date.toNumber()).to.be.equal(true);
         }
 
