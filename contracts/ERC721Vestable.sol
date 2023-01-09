@@ -42,9 +42,8 @@ abstract contract ERC721Vestable is ERC721 {
             block.timestamp < vestingEnd
         ) {
             uint256 vestingDuration = vestingEnd - vestingStart;
-            uint256 chunk = vestingDuration / lastVestingGlobalId;
             require(
-                block.timestamp >= (chunk * globalId) + vestingStart,
+                block.timestamp >= (vestingDuration * globalId) / lastVestingGlobalId + vestingStart,
                 "Not vested"
             );
         }
@@ -53,7 +52,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice returns true if a tokenId has besting property.
      */
-    function isVestingToken(uint256 tokenId) public view returns (bool) {
+    function isVestingToken(uint256 tokenId) external view returns (bool) {
         uint256 globalId = getGlobalId(tokenId);
         return globalId <= lastVestingGlobalId;
     }
@@ -63,8 +62,7 @@ abstract contract ERC721Vestable is ERC721 {
     function vestsAt(uint256 tokenId) public view returns (uint256) {
         uint256 globalId = getGlobalId(tokenId);
         uint256 vestingDuration = vestingEnd - vestingStart;
-        uint256 chunk = vestingDuration / lastVestingGlobalId;
-        return (chunk * globalId) + vestingStart;
+        return (vestingDuration * globalId) / lastVestingGlobalId + vestingStart;
     }
 
     /**
@@ -97,6 +95,10 @@ abstract contract ERC721Vestable is ERC721 {
      * @notice set the new vesting start time
      */
     function _setVestingStart(uint256 _newVestingStart) internal virtual {
+        require(
+            _newVestingStart < vestingEnd,
+            "Start must be less than start"
+        );
         vestingStart = _newVestingStart;
     }
 
