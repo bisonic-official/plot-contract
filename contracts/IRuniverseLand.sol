@@ -17,8 +17,6 @@ interface IRuniverseLand {
 
     event LandMinted(address to, uint256 tokenId, IRuniverseLand.PlotSize size);
 
-    function mint(address recipient, PlotSize size) external returns (uint256);
-
     function mintTokenId(
         address recipient,
         uint256 tokenId,

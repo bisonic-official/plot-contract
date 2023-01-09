@@ -29,13 +29,12 @@ describe("Setters and getters test", function () {
         hardhatRuniverseContract.setPrimaryMinter(owner.address);
 
         const plotPrices = [ethers.utils.parseEther("0.01"),ethers.utils.parseEther("0.02"),ethers.utils.parseEther("0.03"),ethers.utils.parseEther("0.04"),ethers.utils.parseEther("0.05")];
-        const plotsAvailable = [ ethers.BigNumber.from('1'), ethers.BigNumber.from('2') ,ethers.BigNumber.from('3') ,ethers.BigNumber.from('4') ,ethers.BigNumber.from('5')];
+        const plotsAvailable = [ ethers.BigNumber.from('52500'), ethers.BigNumber.from('16828') ,ethers.BigNumber.from('560') ,ethers.BigNumber.from('105') ,ethers.BigNumber.from('7')];
         const mintClaimStartTime = ethers.BigNumber.from('100');
         const mintListStartTime = ethers.BigNumber.from('200');
         const mintStartTime = ethers.BigNumber.from('300');
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
@@ -71,7 +70,6 @@ describe("Setters and getters test", function () {
 
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
@@ -112,8 +110,11 @@ describe("Setters and getters test", function () {
         const blockBefore = await ethers.provider.getBlock(blockNumBefore);
         const startTimeVesting = blockBefore.timestamp ;
         const endTimeVesting = blockBefore.timestamp + 1000;
+        const badStartTimeVesting = blockBefore.timestamp + 2000;
         await hardhatRuniverseContract.setVestingStart( startTimeVesting );
+        await expect(  hardhatRuniverseContract.setVestingEnd( mintClaimStartTime ) ).to.be.revertedWith("End must be greater than start");
         await hardhatRuniverseContract.setVestingEnd( endTimeVesting );
+        await expect(  hardhatRuniverseContract.setVestingStart( badStartTimeVesting ) ).to.be.revertedWith("Start must be less than start");
         
         //LastVestingGlobalId + 1 should be free of vesting
         await expect( await hardhatRuniverseContract.isVestingToken( tokenIds[5] )).to.be.equal(false);
@@ -158,7 +159,6 @@ describe("Mint Test", function () {
         const startPublicSale = blockBefore.timestamp + 1000;
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
         await hardhatRuniverseMinterContract.setPublicMintStartTime(startPublicSale);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
@@ -169,7 +169,13 @@ describe("Mint Test", function () {
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await expect(hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.02") } )).to.be.revertedWith("Ether value sent is not accurate");        
         await hardhatRuniverseMinterContract.mint(2, 1, { value: ethers.utils.parseEther("0.03") } )
-        await expect(hardhatRuniverseMinterContract.mint(2, 1, { value: ethers.utils.parseEther("0.03") } )).to.be.revertedWith("All plots of that size minted");        
+        await hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )
+        await hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )
+        await hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )
+        await hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )
+        await hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )
+        await expect(hardhatRuniverseMinterContract.mint(3, 20, { value: ethers.utils.parseEther("0.8") } )).to.be.revertedWith("Trying to mint too many plots"); 
+
         //Search for events to know minted plots
         const sentLogs = await hardhatRuniverseContract.queryFilter(
             hardhatRuniverseContract.filters.Transfer(owner.address, null),
@@ -191,9 +197,26 @@ describe("Mint Test", function () {
         const tokenIds = Array.from(owned);
         expect((await hardhatRuniverseMinterContract.getTokenIdPlotType(tokenIds[0]))).to.equal(2);
 
+        //Withdraw test
+        var beforeWithdraw = await hardhatRuniverseMinterContract.provider.getBalance(owner.address);
+        var withdrawEther = ethers.utils.parseEther("0.01")
+        var transactionWhithdraw = await hardhatRuniverseMinterContract.withdraw(ethers.utils.parseEther("0.01"));   
+        var receiptWithdraw = await transactionWhithdraw.wait(); 
+        var expectedWithdrawEther = beforeWithdraw.add( withdrawEther.sub( receiptWithdraw.cumulativeGasUsed.mul( receiptWithdraw.effectiveGasPrice ) ) );
+
+        expect(await hardhatRuniverseMinterContract.provider.getBalance(owner.address)).to.equal(expectedWithdrawEther);
+
+        //Withdraw all test
+        var beforeWithdrawAll = await hardhatRuniverseMinterContract.provider.getBalance(owner.address);
+        var withdrawAllEther = await hardhatRuniverseMinterContract.provider.getBalance(hardhatRuniverseMinterContract.address);
+        var transactionWithdrawAll = await hardhatRuniverseMinterContract.withdrawAll();
+        var receiptWithdrawAll = await transactionWithdrawAll.wait();
+        var expectedWithdrawAllEther = beforeWithdrawAll.add( withdrawAllEther.sub( receiptWithdrawAll.cumulativeGasUsed.mul( receiptWithdrawAll.effectiveGasPrice ) ) );
+
+        expect(await hardhatRuniverseMinterContract.provider.getBalance(owner.address)).to.equal(expectedWithdrawAllEther);
+        expect(await hardhatRuniverseMinterContract.provider.getBalance(hardhatRuniverseMinterContract.address)).to.equal(mintClaimStartTime);
+
         await hardhatRuniverseContract.withdrawAll();
-        await hardhatRuniverseMinterContract.withdraw(ethers.utils.parseEther("0.01"));
-        await hardhatRuniverseMinterContract.withdrawAll();
     });
   });
 
@@ -220,7 +243,6 @@ describe("Mint Test", function () {
 
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListFarTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
@@ -279,31 +301,26 @@ describe("Mint Test", function () {
         const mintListFarTime = ethers.BigNumber.from('99999999999999999999');
         const mintStartTime = ethers.BigNumber.from('0');
 
-
-
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintListFarTime);
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintClaimStartTime);
 
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
-        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Claims not started"); 
-
+        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"] )).to.be.revertedWith("Claims not started"); 
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintListStartTime);
-
         await hardhatRuniverseMinterContract.setClaimlistMerkleRoot("0x194a85fd3d1fd2023357cc245f795fb7129bc2bc646df8b1dc9fb1f4342e4091");
         
         //Mints with invalid proof
-        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Invalid proof.");        
+        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"] )).to.be.revertedWith("Invalid proof.");        
 
         //Mints with valid proof
         await hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"]);
         await hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"]);
 
         //Ran out of slots
-        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Claiming more than allowed");
+        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"] )).to.be.revertedWith("Claiming more than allowed");
 
 
     });
@@ -376,7 +393,6 @@ describe("Mint Test", function () {
         const plotsAvailable = [ ethers.BigNumber.from('10'), ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10')];
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
-        await hardhatRuniverseMinterContract.setPlotsAvailablePerSize(plotsAvailable);
 
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
