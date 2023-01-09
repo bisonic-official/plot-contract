@@ -37,7 +37,7 @@ contract RuniverseLand is
     using Strings for uint256;
 
     /// @notice Maximum supply of land plots
-    uint256 public constant MAX_SUPPLY = 70000;
+    uint256 private constant MAX_SUPPLY = 70000;
 
     /// @notice Counter to track the number minted so far
     uint256 public numMinted = 0;
@@ -54,7 +54,7 @@ contract RuniverseLand is
 
 
 
-    string public constant R = "I should like to save the Shire, if I could";
+    string private constant R = "I should like to save the Shire, if I could";
 
     /**
      * @dev Create the contract and set the initial baseURI
