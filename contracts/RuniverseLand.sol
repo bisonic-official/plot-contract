@@ -165,8 +165,9 @@ contract RuniverseLand is
 
     /**
      * @notice set the vesting toggle
+     * @param _newVestingEnabled 1 for true, 0 for false
      */
-    function setVestingEnabled(bool _newVestingEnabled) external onlyOwner {
+    function setVestingEnabled(uint256 _newVestingEnabled) external onlyOwner {
         _setVestingEnabled(_newVestingEnabled);
     }
 
