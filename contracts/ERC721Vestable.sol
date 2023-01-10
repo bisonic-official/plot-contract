@@ -11,16 +11,16 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 abstract contract ERC721Vestable is ERC721 {
     /// @notice master switch for vesting
-    uint256 public vestingEnabled = 1;
+    uint32 public vestingEnabled = 1;
 
     /// @notice the tokens from 0 to lastVestedTokenId will vest over time
-    uint256 public lastVestingGlobalId = 10924;
+    uint32 public lastVestingGlobalId = 10924;
 
     /// @notice the time the vesting started
-    uint256 public vestingStart = 1671840000; // Dec 24th, 2022
+    uint32 public vestingStart = 1671840000; // Dec 24th, 2022
 
     /// @notice the time the vesting ends
-    uint256 public vestingEnd = 1734998400; // Dec 24th, 2024
+    uint32 public vestingEnd = 1734998400; // Dec 24th, 2024
 
 
 
@@ -79,14 +79,14 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the vesting toggle
      */
-    function _setVestingEnabled(uint256 _newVestingEnabled) internal virtual {
+    function _setVestingEnabled(uint32 _newVestingEnabled) internal virtual {
         vestingEnabled = _newVestingEnabled;
     }
 
     /**
      * @notice set the last vesting token Id
      */
-    function _setLastVestingGlobalId(uint256 _newTokenId) internal virtual {
+    function _setLastVestingGlobalId(uint32 _newTokenId) internal virtual {
         require(_newTokenId > 0, "Must be greater than zero");
         lastVestingGlobalId = _newTokenId;
     }
@@ -94,7 +94,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the new vesting start time
      */
-    function _setVestingStart(uint256 _newVestingStart) internal virtual {
+    function _setVestingStart(uint32 _newVestingStart) internal virtual {
         require(
             _newVestingStart < vestingEnd,
             "Start must be less than start"
@@ -105,7 +105,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the new vesting start time
      */
-    function _setVestingEnd(uint256 _newVestingEnd) internal virtual {
+    function _setVestingEnd(uint32 _newVestingEnd) internal virtual {
         require(
             _newVestingEnd > vestingStart,
             "End must be greater than start"

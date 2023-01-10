@@ -167,28 +167,28 @@ contract RuniverseLand is
      * @notice set the vesting toggle
      * @param _newVestingEnabled 1 for true, 0 for false
      */
-    function setVestingEnabled(uint256 _newVestingEnabled) external onlyOwner {
+    function setVestingEnabled(uint32 _newVestingEnabled) external onlyOwner {
         _setVestingEnabled(_newVestingEnabled);
     }
 
     /**
      * @notice set the last vesting token Id
      */
-    function setLastVestingGlobalId(uint256 _newTokenId) external onlyOwner {
+    function setLastVestingGlobalId(uint32 _newTokenId) external onlyOwner {
         _setLastVestingGlobalId(_newTokenId);
     }
 
     /**
      * @notice set the new vesting start time
      */
-    function setVestingStart(uint256 _newVestingStart) external onlyOwner {
+    function setVestingStart(uint32 _newVestingStart) external onlyOwner {
         _setVestingStart(_newVestingStart);
     }
 
     /**
      * @notice set the new vesting end time
      */
-    function setVestingEnd(uint256 _newVestingEnd) external onlyOwner {
+    function setVestingEnd(uint32 _newVestingEnd) external onlyOwner {
         _setVestingEnd(_newVestingEnd);
     }
 

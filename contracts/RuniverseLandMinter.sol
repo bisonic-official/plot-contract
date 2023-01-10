@@ -45,9 +45,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         type(uint256).max
     ];
 
-    uint256 public publicMintStartTime = type(uint256).max;
-    uint256 public mintlistStartTime = type(uint256).max;
-    uint256 public claimsStartTime = type(uint256).max;
+    uint32 public publicMintStartTime = type(uint32).max;
+    uint32 public mintlistStartTime = type(uint32).max;
+    uint32 public claimsStartTime = type(uint32).max;
 
     /// @notice The primary merkle root
     bytes32 public mintlistMerkleRoot1;
@@ -384,7 +384,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev Assigns a new public start minting time.
      * @param _newPublicMintStartTime uint256 echo time in seconds.     
      */
-    function setPublicMintStartTime(uint256 _newPublicMintStartTime)
+    function setPublicMintStartTime(uint32 _newPublicMintStartTime)
         external
         onlyOwner
     {
@@ -395,7 +395,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev Assigns a new mintlist start minting time.
      * @param _newAllowlistMintStartTime uint256 echo time in seconds.     
      */
-    function setMintlistStartTime(uint256 _newAllowlistMintStartTime)
+    function setMintlistStartTime(uint32 _newAllowlistMintStartTime)
         external
         onlyOwner
     {
@@ -406,7 +406,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev Assigns a new claimlist start minting time.
      * @param _newClaimsStartTime uint256 echo time in seconds.     
      */
-    function setClaimsStartTime(uint256 _newClaimsStartTime) external onlyOwner {
+    function setClaimsStartTime(uint32 _newClaimsStartTime) external onlyOwner {
         claimsStartTime = _newClaimsStartTime;
     }
 
