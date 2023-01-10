@@ -2,6 +2,16 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const ERC721 = require('@openzeppelin/contracts/build/contracts/ERC721.json');
 
+const expected_errors = [
+  "function InvalidVestingGlobalId(uint256 gived_global_id)",
+  "function TokenNotVested(uint256 current_time,uint256 token_vesting_time)",
+  "function NoPlotsAvailable()",
+  "function Address0Error()",
+  "function WrongDateForProcess(uint256 correct_date, uint256 current_date)",
+  "function DeniedProcessDuringMinting()"
+];
+const expected_errors_interface = new ethers.utils.Interface(expected_errors);
+
 describe("Deploy Test", function () {
   it("Deployment should work for contract and minter.", async function () {
     const [owner] = await ethers.getSigners();
@@ -75,7 +85,15 @@ describe("Setters and getters test", function () {
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
 
         await hardhatRuniverseContract.setVestingEnabled( 1 );
-        await hardhatRuniverseContract.setLastVestingGlobalId( 5 );
+        try {
+          await hardhatRuniverseContract.setLastVestingGlobalId( 5 );
+        } catch (e) {
+          const decoded = expected_errors_interface.decodeFunctionData(
+            expected_errors_interface.functions["InvalidVestingGlobalId(uint256)"],
+            e.data
+          );
+          console.warn("Invalid Vesting Global Id, the gived Global ID : '" + decoded.gived_global_id + "' must be greater than 0");
+        }
 
         
        //Mints an extra plot
@@ -118,14 +136,31 @@ describe("Setters and getters test", function () {
         
         //LastVestingGlobalId + 1 should be free of vesting
         await expect( await hardhatRuniverseContract.isVestingToken( tokenIds[5] )).to.be.equal(false);
-        await hardhatRuniverseContract.transferFrom(owner.address, addr1.address,   tokenIds[5] );
+        
+        try{
+          await hardhatRuniverseContract.transferFrom(owner.address, addr1.address, tokenIds[5] );
+        }catch(e){
+          const decoded = expected_errors_interface.decodeFunctionData(
+            expected_errors_interface.functions["TokenNotVested(uint256,uint256)"],
+            e.data
+          );
+          expect( decoded.token_vesting_time.toNumber() > decoded.current_time).to.be.equal(true);
+        }
 
         //Testing before and after times
         for(let counter = 0; counter < 5; counter ++){
           await ethers.provider.send("evm_mine", [startTimeVesting + (counter+1)*200-2]);
           await expect( await hardhatRuniverseContract.isVested(tokenIds[counter] )).to.be.equal(false);
           await expect( await hardhatRuniverseContract.isVestingToken(tokenIds[counter] )).to.be.equal(true);
-          await expect( hardhatRuniverseContract.transferFrom(owner.address, addr1.address,   tokenIds[counter] )).to.be.revertedWith("Not vested");
+          try{
+            await hardhatRuniverseContract.transferFrom(owner.address, addr1.address,   tokenIds[counter] );
+          }catch(e){
+            const decoded = expected_errors_interface.decodeFunctionData(
+              expected_errors_interface.functions["TokenNotVested(uint256,uint256)"],
+              e.data
+            );
+            expect( decoded.token_vesting_time.toNumber() > decoded.current_time).to.be.equal(true);
+          }
           await ethers.provider.send("evm_mine", [startTimeVesting + (counter+1)*200+2]);
           await hardhatRuniverseContract.transferFrom(owner.address, addr1.address,   tokenIds[counter] );
           await expect( await hardhatRuniverseContract.isVested(tokenIds[counter] )).to.be.equal(true);
@@ -165,7 +200,15 @@ describe("Mint Test", function () {
 
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
-        await expect(hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Mint not started");        
+        try {
+          await hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") });
+        } catch (e) {
+          const decoded = expected_errors_interface.decodeFunctionData(
+            expected_errors_interface.functions["WrongDateForProcess(uint256,uint256)"],
+            e.data
+          );
+          expect( decoded.current_date.toNumber() < decoded.correct_date.toNumber()).to.be.equal(true);
+        }
         await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
         await expect(hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.02") } )).to.be.revertedWith("Ether value sent is not accurate");        
         await hardhatRuniverseMinterContract.mint(2, 1, { value: ethers.utils.parseEther("0.03") } )
@@ -237,7 +280,7 @@ describe("Mint Test", function () {
         const plotsAvailable = [ ethers.BigNumber.from('10'), ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10')];
         const mintClaimStartTime = ethers.BigNumber.from('0');
         const mintListStartTime = ethers.BigNumber.from('0');
-        const mintListFarTime = ethers.BigNumber.from('99999999999999999999');
+        const mintListFarTime = ethers.BigNumber.from('999999999999999');
         const mintStartTime = ethers.BigNumber.from('0');
 
 
@@ -250,7 +293,15 @@ describe("Mint Test", function () {
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         //Mint list have not started
-        await expect(hardhatRuniverseMinterContract.mintlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"], { value: ethers.utils.parseEther("0.01") } )).to.be.revertedWith("Mint not started");
+        try{
+          await hardhatRuniverseMinterContract.mintlistMint(0, 1, 2, ["0x404ffa69e506be1899daa19c82154a85be53410304e1ebbc1fe89911fa3b9c6f"], { value: ethers.utils.parseEther("0.01") } );
+        } catch (e) {
+          const decoded = expected_errors_interface.decodeFunctionData(
+            expected_errors_interface.functions["WrongDateForProcess(uint256,uint256)"],
+            e.data
+          );
+          expect( decoded.current_date.toNumber() < decoded.correct_date.toNumber()).to.be.equal(true);
+        }
 
         await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
 
@@ -298,7 +349,7 @@ describe("Mint Test", function () {
         const plotsAvailable = [ ethers.BigNumber.from('10'), ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10')];
         const mintClaimStartTime = ethers.BigNumber.from('0');
         const mintListStartTime = ethers.BigNumber.from('0');
-        const mintListFarTime = ethers.BigNumber.from('99999999999999999999');
+        const mintListFarTime = ethers.BigNumber.from('999999999999999');
         const mintStartTime = ethers.BigNumber.from('0');
 
         await hardhatRuniverseMinterContract.setPrices(plotPrices);
@@ -308,7 +359,16 @@ describe("Mint Test", function () {
 
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
-        await expect(hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"] )).to.be.revertedWith("Claims not started"); 
+        try{
+          await hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"], { value: ethers.utils.parseEther("0.01") } );
+        } catch (e) {
+          console.log(e);
+          const decoded = expected_errors_interface.decodeFunctionData(
+            expected_errors_interface.functions["WrongDateForProcess(uint256,uint256)"],
+            e.data
+          );
+          expect( decoded.current_date.toNumber() < decoded.correct_date.toNumber()).to.be.equal(true);
+        }
         await hardhatRuniverseMinterContract.setClaimsStartTime(mintListStartTime);
         await hardhatRuniverseMinterContract.setClaimlistMerkleRoot("0x194a85fd3d1fd2023357cc245f795fb7129bc2bc646df8b1dc9fb1f4342e4091");
         

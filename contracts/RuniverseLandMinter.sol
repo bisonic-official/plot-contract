@@ -280,7 +280,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         uint256 numPlots,
         uint256 claimedMaxPlots,
         bytes32[] calldata _merkleProof
-    ) external nonReentrant {
+    ) external payable nonReentrant {
         if(!claimsStarted()){
             revert WrongDateForProcess({
                 correct_date:claimsStartTime,
