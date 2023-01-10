@@ -66,20 +66,6 @@ contract RuniverseLand is
         setBaseURI(baseURI);
     }
 
-    /**
-     * @notice Mint a new token
-     * @dev this relies on mintTokenId for minter and reentrancy protection
-     * @param recipient address representing the owner of the new tokenId
-     */
-    function mint(address recipient, PlotSize size)
-        public
-        override
-        returns (uint256)
-    {
-        uint256 tokenId = numMinted;
-        mintTokenId(recipient, tokenId, size);
-        return tokenId;
-    }
 
     /**
      * @notice Mint a new token with a specific id
@@ -131,7 +117,7 @@ contract RuniverseLand is
      * @param tokenId uint256 the id of the token
      * @return exists bool if it exists
      */
-    function exists(uint256 tokenId) public view returns (bool) {
+    function exists(uint256 tokenId) external view returns (bool) {
         return _exists(tokenId);
     }
 
@@ -147,7 +133,7 @@ contract RuniverseLand is
      * @dev Returns the total number of minted lands.
      * @return totalSupply uint256 the number of minted lands.
      */
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() external view returns (uint256) {
         return numMinted;
     }
 
@@ -167,7 +153,8 @@ contract RuniverseLand is
      * @dev Sets a new primary minter address
      * @param newPrimaryMinter address of the new minter
      */
-    function setPrimaryMinter(address newPrimaryMinter) public onlyOwner {
+    function setPrimaryMinter(address newPrimaryMinter) external onlyOwner {
+        require(newPrimaryMinter != address(0), "Invalid primary minter address");
         primaryMinter = newPrimaryMinter;
     }
 
@@ -175,35 +162,37 @@ contract RuniverseLand is
      * @dev Sets a new secondary minter address
      * @param newSecondaryMinter address of the new secondary minter
      */
-    function setSecondaryMinter(address newSecondaryMinter) public onlyOwner {
+    function setSecondaryMinter(address newSecondaryMinter) external onlyOwner {
+        require(newSecondaryMinter != address(0), "Invalid seecondary minter address");
         secondaryMinter = newSecondaryMinter;
     }
 
     /**
      * @notice set the vesting toggle
+     * @param _newVestingEnabled 1 for true, 0 for false
      */
-    function setVestingEnabled(bool _newVestingEnabled) public onlyOwner {
+    function setVestingEnabled(uint256 _newVestingEnabled) external onlyOwner {
         _setVestingEnabled(_newVestingEnabled);
     }
 
     /**
      * @notice set the last vesting token Id
      */
-    function setLastVestingGlobalId(uint256 _newTokenId) public onlyOwner {
+    function setLastVestingGlobalId(uint256 _newTokenId) external onlyOwner {
         _setLastVestingGlobalId(_newTokenId);
     }
 
     /**
      * @notice set the new vesting start time
      */
-    function setVestingStart(uint256 _newVestingStart) public onlyOwner {
+    function setVestingStart(uint256 _newVestingStart) external onlyOwner {
         _setVestingStart(_newVestingStart);
     }
 
     /**
      * @notice set the new vesting end time
      */
-    function setVestingEnd(uint256 _newVestingEnd) public onlyOwner {
+    function setVestingEnd(uint256 _newVestingEnd) external onlyOwner {
         _setVestingEnd(_newVestingEnd);
     }
 
@@ -211,8 +200,9 @@ contract RuniverseLand is
      * @dev ETH should not be sent to this contract, but in the case that it is
      * sent by accident, this function allows the owner to withdraw it.
      */
-    function withdrawAll() public payable onlyOwner {
-        require(payable(msg.sender).send(address(this).balance));
+    function withdrawAll() external payable onlyOwner {
+        (bool success, ) = msg.sender.call{value: address(this).balance}("");
+         require(success, "withdraw was not succesfull");
     }
 
     /**
@@ -221,7 +211,7 @@ contract RuniverseLand is
      * @param token IERC20 the token address
      * @param amount uint256 the amount to send
      */
-    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
+    function forwardERC20s(IERC20 token, uint256 amount) external onlyOwner {
         if(address(msg.sender) == address(0)){
             revert Address0Error();
         }

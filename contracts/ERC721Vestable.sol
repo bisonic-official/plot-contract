@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 abstract contract ERC721Vestable is ERC721 {
     /// @notice master switch for vesting
-    bool public vestingEnabled = true;
+    uint256 public vestingEnabled = 1;
 
     /// @notice the tokens from 0 to lastVestedTokenId will vest over time
     uint256 public lastVestingGlobalId = 10924;
@@ -44,18 +44,17 @@ abstract contract ERC721Vestable is ERC721 {
         super._beforeTokenTransfer(from, to, tokenId);
         uint256 globalId = getGlobalId(tokenId);
         if (
-            vestingEnabled &&
+            vestingEnabled == 1 &&
             from != address(0) && // minting
             globalId <= lastVestingGlobalId &&
             block.timestamp < vestingEnd
         ) {
             uint256 vestingDuration = vestingEnd - vestingStart;
-            uint256 chunk = vestingDuration / lastVestingGlobalId;
 
-            if(block.timestamp < (chunk * globalId) + vestingStart){
+            if(block.timestamp < (vestingDuration * globalId) / lastVestingGlobalId + vestingStart){
                 revert TokenNotVested({
                     current_time: block.timestamp,
-                    token_vesting_time: (chunk * globalId) + vestingStart
+                    token_vesting_time: (vestingDuration * globalId) / lastVestingGlobalId + vestingStart
                 });
             }
         }
@@ -64,7 +63,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice returns true if a tokenId has besting property.
      */
-    function isVestingToken(uint256 tokenId) public view returns (bool) {
+    function isVestingToken(uint256 tokenId) external view returns (bool) {
         uint256 globalId = getGlobalId(tokenId);
         return globalId <= lastVestingGlobalId;
     }
@@ -74,8 +73,7 @@ abstract contract ERC721Vestable is ERC721 {
     function vestsAt(uint256 tokenId) public view returns (uint256) {
         uint256 globalId = getGlobalId(tokenId);
         uint256 vestingDuration = vestingEnd - vestingStart;
-        uint256 chunk = vestingDuration / lastVestingGlobalId;
-        return (chunk * globalId) + vestingStart;
+        return (vestingDuration * globalId) / lastVestingGlobalId + vestingStart;
     }
 
     /**
@@ -83,7 +81,7 @@ abstract contract ERC721Vestable is ERC721 {
      */
     function isVested(uint256 tokenId) public view returns (bool) {
         uint256 globalId = getGlobalId(tokenId);
-        if (!vestingEnabled) return true;
+        if (vestingEnabled == 0) return true;
         if (globalId > lastVestingGlobalId) return true;
         if (block.timestamp > vestingEnd) return true;
         return block.timestamp >= vestsAt(tokenId);
@@ -92,7 +90,7 @@ abstract contract ERC721Vestable is ERC721 {
     /**
      * @notice set the vesting toggle
      */
-    function _setVestingEnabled(bool _newVestingEnabled) internal virtual {
+    function _setVestingEnabled(uint256 _newVestingEnabled) internal virtual {
         vestingEnabled = _newVestingEnabled;
     }
 
@@ -112,6 +110,10 @@ abstract contract ERC721Vestable is ERC721 {
      * @notice set the new vesting start time
      */
     function _setVestingStart(uint256 _newVestingStart) internal virtual {
+        require(
+            _newVestingStart < vestingEnd,
+            "Start must be less than start"
+        );
         vestingStart = _newVestingStart;
     }
 
