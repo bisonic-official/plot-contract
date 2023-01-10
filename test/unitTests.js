@@ -360,9 +360,8 @@ describe("Mint Test", function () {
         await hardhatRuniverseContract.setVestingEnabled( 0 );
 
         try{
-          await hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"], { value: ethers.utils.parseEther("0.01") } );
+          await hardhatRuniverseMinterContract.claimlistMint(0, 1, 2, ["0xae0840ecd9936be1fa9a01a65174f8b8917233e75dd92c89cea9372282f6703b"] )
         } catch (e) {
-          console.log(e);
           const decoded = expected_errors_interface.decodeFunctionData(
             expected_errors_interface.functions["WrongDateForProcess(uint256,uint256)"],
             e.data
