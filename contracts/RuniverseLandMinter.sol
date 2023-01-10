@@ -259,12 +259,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
             "Invalid proof."
         );
 
+        mapping(uint256 => uint256) storage mintedPerSize = mintlistMintedPerSize[msg.sender];
+
         require(
-            mintlistMintedPerSize[msg.sender][uint256(plotSize)] + numPlots <=
+            mintedPerSize[uint256(plotSize)] + numPlots <=
                 claimedMaxPlots, // this is verified by the merkle proof
             "Minting more than allowed"
         );
-        mintlistMintedPerSize[msg.sender][uint256(plotSize)] += numPlots;
+        mintedPerSize[uint256(plotSize)] += numPlots;
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
@@ -304,12 +306,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
             "Invalid proof."
         );
 
+        mapping(uint256 => uint256) storage mintedPerSize = claimlistMintedPerSize[msg.sender];
+
         require(
-            claimlistMintedPerSize[msg.sender][uint256(plotSize)] + numPlots <=
+            mintedPerSize[uint256(plotSize)] + numPlots <=
                 claimedMaxPlots, // this is verified by the merkle proof
             "Claiming more than allowed"
         );
-        claimlistMintedPerSize[msg.sender][uint256(plotSize)] += numPlots;
+        mintedPerSize[uint256(plotSize)] += numPlots;
         _mintTokens(plotSize, numPlots, msg.sender);
     }
 
@@ -351,7 +355,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 plotsAvailablePerSize[uint256(plotSize)],
             "Trying to mint too many plots"
         );
-        for (uint256 i = 0; i < numPlots; i++) {
+        for (uint256 i = 0; i < numPlots; ++i) {
 
             uint256 tokenId = ownerGetNextTokenId(plotSize);            
             plotsMinted[uint256(plotSize)] += 1;          
@@ -487,7 +491,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev Assigns the offset to the local ids. This value will be added to the local id of each plot size  when a token of some size is generated.
      * @param _newPlotSizeLocalOffset uint256[] offsets
      */
-    function setLocalIdOffsets(uint256[] memory _newPlotSizeLocalOffset) external onlyOwner {
+    function setLocalIdOffsets(uint256[] calldata _newPlotSizeLocalOffset) external onlyOwner {
         if(_newPlotSizeLocalOffset.length != 5){
             revert GivedValuesNotValid({
                 sended_values: _newPlotSizeLocalOffset.length,
