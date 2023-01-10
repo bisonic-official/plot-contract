@@ -40,7 +40,7 @@ contract RuniverseLand is
     uint256 private constant MAX_SUPPLY = 70000;
 
     /// @notice Counter to track the number minted so far
-    uint256 public numMinted = 0;
+    uint256 public numMinted;
 
     /// @notice Address of the primary minter
     address public primaryMinter;

@@ -355,7 +355,8 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 plotsAvailablePerSize[uint256(plotSize)],
             "Trying to mint too many plots"
         );
-        for (uint256 i = 0; i < numPlots; ++i) {
+        
+        for (uint256 i; i < numPlots; ++i) {
 
             uint256 tokenId = ownerGetNextTokenId(plotSize);            
             plotsMinted[uint256(plotSize)] += 1;          
