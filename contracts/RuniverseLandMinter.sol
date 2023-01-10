@@ -245,12 +245,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
             "Invalid proof."
         );
 
+        mapping(uint256 => uint256) storage mintedPerSize = mintlistMintedPerSize[msg.sender];
+
         require(
-            mintlistMintedPerSize[msg.sender][uint256(plotSize)] + numPlots <=
+            mintedPerSize[uint256(plotSize)] + numPlots <=
                 claimedMaxPlots, // this is verified by the merkle proof
             "Minting more than allowed"
         );
-        mintlistMintedPerSize[msg.sender][uint256(plotSize)] += numPlots;
+        mintedPerSize[uint256(plotSize)] += numPlots;
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
     }
 
@@ -285,12 +287,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
             "Invalid proof."
         );
 
+        mapping(uint256 => uint256) storage mintedPerSize = claimlistMintedPerSize[msg.sender];
+
         require(
-            claimlistMintedPerSize[msg.sender][uint256(plotSize)] + numPlots <=
+            mintedPerSize[uint256(plotSize)] + numPlots <=
                 claimedMaxPlots, // this is verified by the merkle proof
             "Claiming more than allowed"
         );
-        claimlistMintedPerSize[msg.sender][uint256(plotSize)] += numPlots;
+        mintedPerSize[uint256(plotSize)] += numPlots;
         _mintTokens(plotSize, numPlots, msg.sender);
     }
 
