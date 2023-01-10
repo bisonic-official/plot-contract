@@ -4,8 +4,8 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 0;
-const MINT_LIST_END = 10924;
+const MINT_LIST_START = 151;
+const MINT_LIST_END = 151;
 
 async function private_mint() {
 
@@ -29,20 +29,27 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+    const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+    const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     const from_id = Math.max(MINT_LIST_START, 0);
     const to_id = Math.min(MINT_LIST_END, shuffled_list_to_mint.length -1);
+    for(let r =  0 ; r <=  50; r++ )
+    {
+        const mint_request = shuffled_list_to_mint[r]
+        console.log('Full list to mint', r, mint_request);
+    }
     //Mints the shuffled list
     for(let r =  from_id ; r <=  to_id; r++ ){
         const mint_request = shuffled_list_to_mint[r]
         console.log('Trying to mint', r, mint_request);
-        await runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000});
+        var tx = await runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000});
+        var receipe = await tx.wait();
+        console.log("Gas cost:", receipe.cumulativeGasUsed, receipe.effectiveGasPrice);
     }
 
     //Search for events to know minted plots
