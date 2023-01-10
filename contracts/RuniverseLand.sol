@@ -81,7 +81,7 @@ contract RuniverseLand is
             _msgSender() == primaryMinter || _msgSender() == secondaryMinter,
             "Not a minter"
         );
-        numMinted += 1;
+        ++numMinted;
         emit LandMinted(recipient, tokenId, size);    
         
         _mint(recipient, tokenId);

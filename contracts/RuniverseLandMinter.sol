@@ -338,7 +338,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         for (uint256 i; i < numPlots; ++i) {
 
             uint256 tokenId = ownerGetNextTokenId(plotSize);            
-            plotsMinted[uint256(plotSize)] += 1;          
+            ++plotsMinted[uint256(plotSize)];
                
             runiverseLand.mintTokenId(recipient, tokenId, plotSize);
         }        
