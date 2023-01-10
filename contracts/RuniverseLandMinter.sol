@@ -464,7 +464,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      * @dev Assigns the offset to the local ids. This value will be added to the local id of each plot size  when a token of some size is generated.
      * @param _newPlotSizeLocalOffset uint256[] offsets
      */
-    function setLocalIdOffsets(uint256[] memory _newPlotSizeLocalOffset) external onlyOwner {
+    function setLocalIdOffsets(uint256[] calldata _newPlotSizeLocalOffset) external onlyOwner {
         require(
             _newPlotSizeLocalOffset.length == 5,
             "must set exactly 5 numbers"

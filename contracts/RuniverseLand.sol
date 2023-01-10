@@ -61,7 +61,7 @@ contract RuniverseLand is
      * @param baseURI string the initial base URI for the token metadata URL
      */
     constructor(string memory baseURI) ERC721("RuniverseLand", "RUNIVERSE") {
-        setBaseURI(baseURI);
+        baseTokenURI = baseURI;
     }
 
 
@@ -141,7 +141,7 @@ contract RuniverseLand is
      * @dev Sets a new base URI
      * @param newBaseURI string the new token base URI
      */
-    function setBaseURI(string memory newBaseURI) public onlyOwner {
+    function setBaseURI(string calldata newBaseURI) public onlyOwner {
         baseTokenURI = newBaseURI;
     }
 
