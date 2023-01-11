@@ -4,8 +4,9 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 151;
-const MINT_LIST_END = 151;
+const MINT_LIST_START = 6870;
+//const MINT_LIST_END = 9512;
+const MINT_LIST_END = 6880;
 
 async function private_mint() {
 
@@ -29,28 +30,52 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2";
+    const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2"; //goerli
+    //const runiverseMinterContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca";
+    const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca"; //goerli
+    //const runiverseContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
+
+    await delay(2500);
 
     const from_id = Math.max(MINT_LIST_START, 0);
     const to_id = Math.min(MINT_LIST_END, shuffled_list_to_mint.length -1);
-    for(let r =  0 ; r <=  50; r++ )
-    {
-        const mint_request = shuffled_list_to_mint[r]
-        console.log('Full list to mint', r, mint_request);
-    }
-    //Mints the shuffled list
+
+    let txPromises = new Array<Promise<any> >();
+    let receiptPromises = new Array<Promise<any> >();
+
+    //Mints the shuffled list 
     for(let r =  from_id ; r <=  to_id; r++ ){
-        const mint_request = shuffled_list_to_mint[r]
-        console.log('Trying to mint', r, mint_request);
-        var tx = await runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000});
-        var receipe = await tx.wait();
-        console.log("Gas cost:", receipe.cumulativeGasUsed, receipe.effectiveGasPrice);
+        const mint_request = shuffled_list_to_mint[r];
+        const originalGasPrice = await runiverseMinterContract.provider.getGasPrice();            
+        const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
+        console.log('Sending transaction', r, mint_request, gasPrice);
+        //const nonce = r*2;
+
+        let txPromise = runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000, gasPrice:gasPrice }).then((tx)=>{
+                if(tx){
+                    let receiptPromise = tx.wait().then((receipt)=>{onMinted(receipt, r);}).catch( (error) => {errorMessage("Tx.Wait() error", r, error);} );
+                    receiptPromises.push(receiptPromise);
+                }
+                else
+                    errorMessage("Transaction null", r, tx);    
+            }
+        ).catch( (error) => {errorMessage("Transaction sending error", r, error);} );
+
+        txPromises.push(txPromise);
+    
+        await delay(2000);
     }
+
+    Promise.all(txPromises).then(values => {
+        console.log("##Tx sent finished##");
+    });
+    Promise.all(receiptPromises).then(values => {
+        console.log("##Mintings finished##");
+    });
 
     //Search for events to know minted plots
     const sentLogs = await runiverseContract.queryFilter(
@@ -72,8 +97,21 @@ async function private_mint() {
     }
     const tokenIds = Array.from(owned);
 
-    console.log('Transfer logs:');
-    console.log(tokenIds);
+    //console.log('Transfer logs:');
+    //console.log(tokenIds);
+}
+
+function errorMessage(msg, index, error){
+    console.log(msg, index, error);
+    process.exit();
+}
+
+function delay(ms: number) {
+    return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
+function onMinted(receipt, id){
+    console.log("Minting finished:", receipt.cumulativeGasUsed, receipt.effectiveGasPrice, receipt.to, id, receipt.nonce );
 }
 
 //Fisher-Yates swaps for a linear uniform shuffle
