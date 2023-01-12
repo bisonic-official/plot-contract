@@ -52,7 +52,7 @@ async function private_mint() {
         console.log('Preparing transaction', gasPrice);
         let addresses = new Array <string>(); 
         let plotSizes = new Array <number>(); 
-        for(let c = r; c< Math.min(to_id, r + BATCH_SIZE); c++ ){
+        for(let c = r; c< Math.min(to_id + 1, r + BATCH_SIZE); c++ ){
             addresses.push(shuffled_list_to_mint[c].address);
             plotSizes.push(shuffled_list_to_mint[c].plot_type);
             console.log('Batch mint', c, shuffled_list_to_mint[c].address, shuffled_list_to_mint[c].plot_type);
