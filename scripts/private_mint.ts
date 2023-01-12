@@ -5,8 +5,8 @@ type MintRequirement = { address: string, plot_type: number };
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
 const MINT_LIST_START = 0;
-const MINT_LIST_END = 1;
-const BATCH_SIZE = 1;
+const MINT_LIST_END = 200;
+const BATCH_SIZE = 100;
 
 async function private_mint() {
 
@@ -46,7 +46,9 @@ async function private_mint() {
     for(let r =  from_id ; r <=  to_id; r+=BATCH_SIZE ){        
         const mint_request = shuffled_list_to_mint[r];
         const originalGasPrice = await runiverseMinterContract.provider.getGasPrice();            
-        const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('1') ) );
+        //const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
+        const gasPrice = (originalGasPrice).mul( ethers.BigNumber.from('1') );
+
         console.log('Preparing transaction', gasPrice);
         let addresses = new Array <string>(); 
         let plotSizes = new Array <number>(); 
