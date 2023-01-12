@@ -38,10 +38,10 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     uint256 public plotGlobalOffset = 1;
 
     uint256[] public plotPrices = [
-        0.3659 ether,
-        1.0063 ether,
-        15.2469 ether,
-        24.3951 ether,
+        0.1 ether,
+        0.2 ether,
+        0.3 ether,
+        0.4 ether,
         type(uint256).max
     ];
 

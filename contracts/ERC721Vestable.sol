@@ -14,13 +14,13 @@ abstract contract ERC721Vestable is ERC721 {
     uint256 public vestingEnabled = 1;
 
     /// @notice the tokens from 0 to lastVestedTokenId will vest over time
-    uint256 public lastVestingGlobalId = 10924;
+    uint256 public lastVestingGlobalId = 9513;
 
     /// @notice the time the vesting started
-    uint256 public vestingStart = 1671840000; // Dec 24th, 2022
+    uint256 public vestingStart = 1673492400; // Dec 24th, 2022
 
     /// @notice the time the vesting ends
-    uint256 public vestingEnd = 1734998400; // Dec 24th, 2024
+    uint256 public vestingEnd = 1673578800; // Dec 24th, 2024
 
     /// Invalid Vesting Global Id, the gived Global ID : "`gived_global_id`" must be greater than 0
     /// @param gived_global_id Global id.
