@@ -77,10 +77,17 @@ describe("Setters and getters test", function () {
         await hardhatRuniverseContract.setVestingEnabled( 1 );
         await hardhatRuniverseContract.setLastVestingGlobalId( 5 );
 
+        await expect(   hardhatRuniverseMinterContract.ownerMint([0, 0] , [owner.address]) ).to.be.revertedWith("Arrays should have the same size"); 
         
        //Mints an extra plot
-       for(let counter = 0; counter<6; counter ++)
-            await hardhatRuniverseMinterContract.ownerMint(0 , 1, owner.address);
+        await hardhatRuniverseMinterContract.ownerMint(
+              [0,0,0,0,0,0] , 
+              [ owner.address,
+                owner.address,
+                owner.address,
+                owner.address,
+                owner.address,
+                owner.address]);
 
         //Search for events to know minted plots
         const sentLogs = await hardhatRuniverseContract.queryFilter(
@@ -341,7 +348,7 @@ describe("Mint Test", function () {
         const tokenId = ethers.BigNumber.from('1099511628032');
         const tokenBad = ethers.BigNumber.from('0');
 
-        await hardhatRuniverseMinterContract.ownerMint(0 , 1, owner.address);
+        await hardhatRuniverseMinterContract.ownerMint([0] , [owner.address]);
 
         const tokenUri_0 = await hardhatRuniverseContract.tokenURI(tokenId);
         await expect(tokenUri_0).to.be.equal("http://localhost:9080/GetPlotInfo?PlotId=1099511628032");  
@@ -372,7 +379,7 @@ describe("Mint Test", function () {
 
         await hardhatRuniverseMinterContract.setGlobalIdOffset(5);
         await hardhatRuniverseMinterContract.setLocalIdOffsets([7,3,3,3,3]);
-        await hardhatRuniverseMinterContract.ownerMint(0 , 1, owner.address);
+        await hardhatRuniverseMinterContract.ownerMint([0] , [owner.address]);
 
         await expect(await hardhatRuniverseContract.exists(tokenId)).to.be.equal(true); 
     });

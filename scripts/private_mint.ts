@@ -4,9 +4,9 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 6870;
-//const MINT_LIST_END = 9512;
-const MINT_LIST_END = 6880;
+const MINT_LIST_START = 0;
+const MINT_LIST_END = 9000;
+const BATCH_SIZE = 100;
 
 async function private_mint() {
 
@@ -30,13 +30,13 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2"; //goerli
-    //const runiverseMinterContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+    //const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2"; //goerli
+    const runiverseMinterContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca"; //goerli
-    //const runiverseContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+    //const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca"; //goerli
+    const runiverseContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     await delay(2500);
@@ -44,38 +44,32 @@ async function private_mint() {
     const from_id = Math.max(MINT_LIST_START, 0);
     const to_id = Math.min(MINT_LIST_END, shuffled_list_to_mint.length -1);
 
-    let txPromises = new Array<Promise<any> >();
-    let receiptPromises = new Array<Promise<any> >();
-
     //Mints the shuffled list 
-    for(let r =  from_id ; r <=  to_id; r++ ){
+    for(let r =  from_id ; r <=  to_id; r+=BATCH_SIZE ){        
         const mint_request = shuffled_list_to_mint[r];
         const originalGasPrice = await runiverseMinterContract.provider.getGasPrice();            
         const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
-        console.log('Sending transaction', r, mint_request, gasPrice);
-        //const nonce = r*2;
+        console.log('Preparing transaction', gasPrice);
+        let addresses = new Array <string>(); 
+        let plotSizes = new Array <number>(); 
+        for(let c = r; c< Math.min(to_id, r + BATCH_SIZE); c++ ){
+            addresses.push(shuffled_list_to_mint[c].address);
+            plotSizes.push(shuffled_list_to_mint[c].plot_type);
+            console.log('Batch mint', c, shuffled_list_to_mint[c].address, shuffled_list_to_mint[c].plot_type);
+        }
+        console.log( addresses.length, plotSizes.length );
+        
+        const tx = await runiverseMinterContract.ownerMint(plotSizes, addresses, {gasLimit: 8000000, gasPrice:gasPrice })
+        .catch( (error) => {errorMessage("Transaction sending error", r, error);} );
+        
+        if(tx){
+            let receipt = await tx.wait().catch( (error) => {errorMessage("Tx.Wait() error", r, error);} );                    
+            onMinted(receipt, r);
+        }
+        else
+            errorMessage("Transaction null", r, tx);
 
-        let txPromise = runiverseMinterContract.ownerMint(mint_request.plot_type , 1, mint_request.address, {gasLimit: 5000000, gasPrice:gasPrice }).then((tx)=>{
-                if(tx){
-                    let receiptPromise = tx.wait().then((receipt)=>{onMinted(receipt, r);}).catch( (error) => {errorMessage("Tx.Wait() error", r, error);} );
-                    receiptPromises.push(receiptPromise);
-                }
-                else
-                    errorMessage("Transaction null", r, tx);    
-            }
-        ).catch( (error) => {errorMessage("Transaction sending error", r, error);} );
-
-        txPromises.push(txPromise);
-    
-        await delay(2000);
     }
-
-    Promise.all(txPromises).then(values => {
-        console.log("##Tx sent finished##");
-    });
-    Promise.all(receiptPromises).then(values => {
-        console.log("##Mintings finished##");
-    });
 
     //Search for events to know minted plots
     const sentLogs = await runiverseContract.queryFilter(

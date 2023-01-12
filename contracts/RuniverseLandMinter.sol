@@ -340,22 +340,21 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Method to mint a plot and assign it to an address without any requirement. Used for private minting.
-     * @param plotSize PlotSize enum with plot size.
-     * @param numPlots uint256 number of plots to be minted. 
-     * @param recipient address  address that sent the mint.          
+     * @dev Method to mint many plot and assign it to an addresses without any requirement. Used for private minting.
+     * @param plotSizes PlotSize[] enums with plot sizes.
+     * @param recipients address[]  addresses where the token will be transferred.          
      */
     function ownerMint(
-        IRuniverseLand.PlotSize plotSize,
-        uint256 numPlots,
-        address recipient
+        IRuniverseLand.PlotSize[] calldata plotSizes,
+        address[] calldata recipients
     ) external onlyOwner {
         require(
-            plotsMinted[uint256(plotSize)] + numPlots <=
-                plotsAvailablePerSize[uint256(plotSize)],
-            "Trying to mint too many plots"
+            plotSizes.length == recipients.length,
+            "Arrays should have the same size"
         );
-        _mintTokens(plotSize, numPlots, recipient);
+        for (uint256 i; i < recipients.length; ++i) {
+            _mintTokens(plotSizes[i], 1, recipients[i]);
+        }
     }
 
     /**
