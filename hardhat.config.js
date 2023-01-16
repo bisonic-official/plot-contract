@@ -1,6 +1,6 @@
 require("@nomicfoundation/hardhat-toolbox");
 
-const ALCHEMY_API_KEY = "baAN4zPN0dnjX3Qt5yVtxqgejGVinNCe";
+const ALCHEMY_API_KEY = "BmIuWjuxR7eezrIJQ9_tjzWXXwCYEx6a";
 const GOERLI_PRIVATE_KEY = "4f768fd6721871e27706d8c43470b890e29d1c361c5e9594303e5b0df51ec0df";
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
             throwOnCallFailures: true
        },
        goerli: {
-        url: 'https://eth-goerli.g.alchemy.com/v2/baAN4zPN0dnjX3Qt5yVtxqgejGVinNCe',
+        url: 'https://eth-goerli.g.alchemy.com/v2/BmIuWjuxR7eezrIJQ9_tjzWXXwCYEx6a',
         accounts: ['4f768fd6721871e27706d8c43470b890e29d1c361c5e9594303e5b0df51ec0df']
       }
     },

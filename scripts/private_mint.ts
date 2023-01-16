@@ -4,8 +4,8 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 0;
-const MINT_LIST_END = 200;
+const MINT_LIST_START = 8602;
+const MINT_LIST_END = 9512;
 const BATCH_SIZE = 100;
 
 async function private_mint() {
@@ -30,11 +30,11 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0x710C5999FfaAe2ea3338AEd2C4ccC5E154C6b554";
+    const runiverseMinterContractAddress = "0x41Bf917b1f133fa5D52Ec29e6DBfA5C61c7614Ca";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0x77Fce46E431863f5ECaB7a1fF099D58dBd703cbb";
+    const runiverseContractAddress = "0x5789509052A2de4ebB3657df3cAa67567e26d9D2";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     await delay(2500);
@@ -46,8 +46,8 @@ async function private_mint() {
     for(let r =  from_id ; r <=  to_id; r+=BATCH_SIZE ){        
         const mint_request = shuffled_list_to_mint[r];
         const originalGasPrice = await runiverseMinterContract.provider.getGasPrice();            
-        //const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
-        const gasPrice = (originalGasPrice).mul( ethers.BigNumber.from('1') );
+        const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
+        //const gasPrice = (originalGasPrice).mul( ethers.BigNumber.from('1') );
 
         console.log('Preparing transaction', gasPrice);
         let addresses = new Array <string>(); 
