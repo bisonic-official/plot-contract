@@ -54,6 +54,8 @@ contract RuniverseLand is
     error NoPlotsAvailable();
     error Address0Error();
 
+    /// @notice Whitelist for markets
+    mapping(address => bool) private _approvedMarketplaces;
 
 
     string private constant R = "I should like to save the Shire, if I could";
@@ -194,6 +196,36 @@ contract RuniverseLand is
      */
     function setVestingEnd(uint256 _newVestingEnd) external onlyOwner {
         _setVestingEnd(_newVestingEnd);
+    }
+
+    /**
+     * @notice Override of the approve method to whitelist markets
+     * @param to address to approve transfer
+     * @param tokenId token be transferred allowed by to
+     */
+    function approve(address to, uint256 tokenId) public virtual override {        
+        require(_approvedMarketplaces[to], "Invalid Marketplace");
+        super.approve(to, tokenId);
+    }
+
+    /**
+     * @notice Override of the setApprovalForAll method to whitelist markets
+     * @param operator address to approve transfer
+     * @param approved enable or disable transfer
+     */
+    function setApprovalForAll(address operator, bool approved) public virtual override {        
+        require(_approvedMarketplaces[operator], "Invalid Marketplace");
+        super.setApprovalForAll(operator, approved);
+    }
+
+
+    /**
+     * @notice Add or remove an address for the market whitelist
+     * @param market market address
+     * @param approved enable or disable market
+     */
+    function setApprovedMarketplace(address market, bool approved) public onlyOwner {        
+        _approvedMarketplaces[market] = approved;
     }
 
     /**

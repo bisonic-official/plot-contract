@@ -509,3 +509,79 @@ describe("Mint Test", function () {
 
     });
   });
+
+
+
+  describe.only("Marketplace whitelist", function () {
+    it("Marketplace whitelist should work.", async function () {
+        const [owner, addr1, addr2] = await ethers.getSigners();
+
+        const RuniverseContract = await ethers.getContractFactory("RuniverseLand");
+        const hardhatRuniverseContract = await RuniverseContract.deploy('http://localhost:9080/GetPlotInfo?PlotId=');
+        
+        const RuniverseMinterContract = await ethers.getContractFactory("RuniverseLandMinter");
+        const hardhatRuniverseMinterContract = await RuniverseMinterContract.deploy(hardhatRuniverseContract.address);
+        hardhatRuniverseContract.setPrimaryMinter(hardhatRuniverseMinterContract.address);
+
+        const plotPrices = [ethers.utils.parseEther("0.01"),ethers.utils.parseEther("0.02"),ethers.utils.parseEther("0.03"),ethers.utils.parseEther("0.04"),ethers.utils.parseEther("0.05")];
+        const plotsAvailable = [ ethers.BigNumber.from('10'), ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10')];
+        const mintClaimStartTime = ethers.BigNumber.from('0');
+        const mintListStartTime = ethers.BigNumber.from('0');
+        const mintStartTime = ethers.BigNumber.from('0');
+
+
+
+        await hardhatRuniverseMinterContract.setPrices(plotPrices);
+        await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
+        await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
+        await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
+
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
+
+       //Mints an extra plot
+        await hardhatRuniverseMinterContract.ownerMint(
+              [0,0] , 
+              [ owner.address,
+                owner.address]);
+
+        //Search for events to know minted plots
+        const sentLogs = await hardhatRuniverseContract.queryFilter(
+            hardhatRuniverseContract.filters.Transfer(owner.address, null),
+        );
+        const receivedLogs = await hardhatRuniverseContract.queryFilter(
+            hardhatRuniverseContract.filters.Transfer(null, owner.address),
+        );
+        const logs = sentLogs.concat(receivedLogs)
+            .sort(
+                (a, b) =>
+                a.blockNumber - b.blockNumber ||
+                a.transactionIndex - b.TransactionIndex,
+            );
+        const owned = new Set();
+        for (const log of logs) {
+            const { tokenId } = log.args;
+            owned.add(tokenId.toString());
+        }
+        const tokenIds = Array.from(owned);
+
+        //Should be 2 plots
+        expect(tokenIds.length).to.equal(2);
+
+        //Address not in whitelist, signer can't approve addr1 to transfer his token
+        await expect(  hardhatRuniverseContract.approve(addr1.address, tokenIds[0]) ).to.be.revertedWith("Invalid Marketplace");
+        //Approving add1 as "marketplace"
+        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, true);
+        //Success approve, now addr1 can transfer tokenIds[0]
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[0] )
+        //Removing addr1 as marketplace approved
+        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, false);
+        //Should fail again.
+        await expect(  hardhatRuniverseContract.approve(addr1.address, tokenIds[1]) ).to.be.revertedWith("Invalid Marketplace");
+        //Approving again as marketplace
+        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, true);
+        //Approving addr1
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] )
+
+
+    });
+  });
