@@ -540,8 +540,10 @@ describe("Mint Test", function () {
 
        //Mints an extra plot
         await hardhatRuniverseMinterContract.ownerMint(
-              [0,0] , 
+              [0,0,0,0] , 
               [ owner.address,
+                owner.address,
+                owner.address,
                 owner.address]);
 
         //Search for events to know minted plots
@@ -565,18 +567,56 @@ describe("Mint Test", function () {
         const tokenIds = Array.from(owned);
 
         //Should be 2 plots
-        expect(tokenIds.length).to.equal(2);
+        expect(tokenIds.length).to.equal(4);
 
+        //Normal fail transfer, as is not approved
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[0] ) ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
         //Success approve, now addr1 can transfer tokenIds[0]
         await hardhatRuniverseContract.approve(addr1.address, tokenIds[0] );
+        //Success transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[0] );
         //Denying add1 as "marketplace"
         await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, true);        
         //Address is in blacklist, signer can't approve addr1 to transfer his token
-        await expect(  hardhatRuniverseContract.approve(addr1.address, tokenIds[1]) ).to.be.revertedWith("Invalid Marketplace");
+        await expect( hardhatRuniverseContract.approve(addr1.address, tokenIds[1]) ).to.be.revertedWith("Invalid Marketplace");
+        //If trying to transfer, first require is the market blacklist, so it should fail
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[1] ) ).to.be.revertedWith("Invalid Marketplace");
         //Removing "addr1" from the blacklist
         await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, false);
-        //Success approve, now addr1 can transfer tokenIds[1]
-        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] );        
+        //Success approve, now addr1 and add2 can transfer tokenIds[1]
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] );      
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[2] );
+        //Correct transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[1] );
+        //Denying the addr1 as marketplace
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, true);
+        //add2 was not transferred and now addr1 is blocked as marketplace
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[2] ) ).to.be.revertedWith("Invalid Marketplace");
+
+
+        //Addr1 is blocked as marketplace, setApprovalForAll should fail
+        await expect( hardhatRuniverseContract.setApprovalForAll(addr1.address, true ) ).to.be.revertedWith("Invalid Marketplace");
+        //Allowing the  marketplace again
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,false);
+        //Now approved for all tokens
+        await hardhatRuniverseContract.setApprovalForAll(addr1.address, true );
+        //Correct transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[2] );
+        //Denying addr1 as marketplace again
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,true);
+        //Failed trasnfer
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] ) ).to.be.revertedWith("Invalid Marketplace");
+
+        //Allowing marketplace
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,false);
+        //Remiving approval
+        await hardhatRuniverseContract.setApprovalForAll(addr1.address, false );
+        //Normal not approved fail
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] ) ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+        //Single approving
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[3] );
+        //Success transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] );
 
     });
   });

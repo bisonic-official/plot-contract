@@ -218,6 +218,27 @@ contract RuniverseLand is
         super.setApprovalForAll(operator, approved);
     }
 
+    /**
+     * @notice Override of the isApprovedForAll method to blacklist markets. Reverts if is not allowed.
+     * @param owner owner of the tokens
+     * @param operator marketplace address
+     * @return true if all the tokens are approved to be trasnferred by operator.
+     */
+   function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+        require(!_deniedMarketplaces[operator], "Invalid Marketplace");        
+        return  super.isApprovedForAll( owner, operator );
+    }
+
+    /**
+     * @notice Override of the getApproved method to blacklist markets. Reverts if is not allowed.
+     * @param tokenId Id of the token to check if is approved.
+     * @return address that is allowed to transfer the tokenId
+     */
+    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+        address addr = super.getApproved(tokenId);
+        require(!_deniedMarketplaces[addr], "Invalid Marketplace");        
+        return addr;
+    }
 
     /**
      * @notice Add or remove an address for the market blacklist
@@ -225,7 +246,7 @@ contract RuniverseLand is
      * @param denied deny (true) or allow (false) a marketplace 
      */
     function setDeniedMarketplace(address market, bool denied) public onlyOwner {        
-        _deniedMarketplaces[market] = approved;
+        _deniedMarketplaces[market] = denied;
     }
 
     /**
