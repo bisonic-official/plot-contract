@@ -55,7 +55,7 @@ contract RuniverseLand is
     error Address0Error();
 
     /// @notice Whitelist for markets
-    mapping(address => bool) private _approvedMarketplaces;
+    mapping(address => bool) private _deniedMarketplaces;
 
 
     string private constant R = "I should like to save the Shire, if I could";
@@ -199,33 +199,54 @@ contract RuniverseLand is
     }
 
     /**
-     * @notice Override of the approve method to whitelist markets
+     * @notice Override of the approve method to blacklist markets
      * @param to address to approve transfer
      * @param tokenId token be transferred allowed by to
      */
     function approve(address to, uint256 tokenId) public virtual override {        
-        require(_approvedMarketplaces[to], "Invalid Marketplace");
+        require(!_deniedMarketplaces[to], "Invalid Marketplace");
         super.approve(to, tokenId);
     }
 
     /**
-     * @notice Override of the setApprovalForAll method to whitelist markets
+     * @notice Override of the setApprovalForAll method to blacklist markets
      * @param operator address to approve transfer
      * @param approved enable or disable transfer
      */
     function setApprovalForAll(address operator, bool approved) public virtual override {        
-        require(_approvedMarketplaces[operator], "Invalid Marketplace");
+        require(!_deniedMarketplaces[operator], "Invalid Marketplace");
         super.setApprovalForAll(operator, approved);
     }
 
+    /**
+     * @notice Override of the isApprovedForAll method to blacklist markets. Reverts if is not allowed.
+     * @param owner owner of the tokens
+     * @param operator marketplace address
+     * @return true if all the tokens are approved to be trasnferred by operator.
+     */
+   function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
+        require(!_deniedMarketplaces[operator], "Invalid Marketplace");        
+        return  super.isApprovedForAll( owner, operator );
+    }
 
     /**
-     * @notice Add or remove an address for the market whitelist
-     * @param market market address
-     * @param approved enable or disable market
+     * @notice Override of the getApproved method to blacklist markets. Reverts if is not allowed.
+     * @param tokenId Id of the token to check if is approved.
+     * @return address that is allowed to transfer the tokenId
      */
-    function setApprovedMarketplace(address market, bool approved) public onlyOwner {        
-        _approvedMarketplaces[market] = approved;
+    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+        address addr = super.getApproved(tokenId);
+        require(!_deniedMarketplaces[addr], "Invalid Marketplace");        
+        return addr;
+    }
+
+    /**
+     * @notice Add or remove an address for the market blacklist
+     * @param market market place address
+     * @param denied deny (true) or allow (false) a marketplace 
+     */
+    function setDeniedMarketplace(address market, bool denied) public onlyOwner {        
+        _deniedMarketplaces[market] = denied;
     }
 
     /**
