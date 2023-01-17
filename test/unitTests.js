@@ -139,7 +139,7 @@ describe("Setters and getters test", function () {
         await hardhatRuniverseContract.setVestingStart( startTimeVesting );
         await expect(  hardhatRuniverseContract.setVestingEnd( mintClaimStartTime ) ).to.be.revertedWith("End must be greater than start");
         await hardhatRuniverseContract.setVestingEnd( endTimeVesting );
-        await expect(  hardhatRuniverseContract.setVestingStart( badStartTimeVesting ) ).to.be.revertedWith("Start must be less than start");
+        await expect(  hardhatRuniverseContract.setVestingStart( badStartTimeVesting ) ).to.be.revertedWith("Start must be less than end");
         
         //LastVestingGlobalId + 1 should be free of vesting
         await expect( await hardhatRuniverseContract.isVestingToken( tokenIds[5] )).to.be.equal(false);
@@ -512,8 +512,8 @@ describe("Mint Test", function () {
 
 
 
-  describe.only("Marketplace whitelist", function () {
-    it("Marketplace whitelist should work.", async function () {
+  describe("Marketplace blacklist", function () {
+    it("Marketplace blacklist should work.", async function () {
         const [owner, addr1, addr2] = await ethers.getSigners();
 
         const RuniverseContract = await ethers.getContractFactory("RuniverseLand");
@@ -567,21 +567,16 @@ describe("Mint Test", function () {
         //Should be 2 plots
         expect(tokenIds.length).to.equal(2);
 
-        //Address not in whitelist, signer can't approve addr1 to transfer his token
-        await expect(  hardhatRuniverseContract.approve(addr1.address, tokenIds[0]) ).to.be.revertedWith("Invalid Marketplace");
-        //Approving add1 as "marketplace"
-        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, true);
         //Success approve, now addr1 can transfer tokenIds[0]
-        await hardhatRuniverseContract.approve(addr1.address, tokenIds[0] )
-        //Removing addr1 as marketplace approved
-        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, false);
-        //Should fail again.
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[0] );
+        //Denying add1 as "marketplace"
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, true);        
+        //Address is in blacklist, signer can't approve addr1 to transfer his token
         await expect(  hardhatRuniverseContract.approve(addr1.address, tokenIds[1]) ).to.be.revertedWith("Invalid Marketplace");
-        //Approving again as marketplace
-        await hardhatRuniverseContract.setApprovedMarketplace(addr1.address, true);
-        //Approving addr1
-        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] )
-
+        //Removing "addr1" from the blacklist
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, false);
+        //Success approve, now addr1 can transfer tokenIds[1]
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] );        
 
     });
   });
