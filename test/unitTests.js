@@ -512,7 +512,7 @@ describe("Mint Test", function () {
 
 
 
-  describe.only("Marketplace whitelist", function () {
+  describe("Marketplace whitelist", function () {
     it("Marketplace whitelist should work.", async function () {
         const [owner, addr1, addr2] = await ethers.getSigners();
 
