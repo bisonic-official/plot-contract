@@ -4,12 +4,13 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 0;
-const MINT_LIST_END = 9;
-const BATCH_SIZE = 10;
+const MINT_LIST_START = 2;
+//const MINT_LIST_END = 1;
+const MINT_LIST_END = 10923;   //Be careful, is 0 index based!!
+const BATCH_SIZE = 100;
 
 async function private_mint() {
-
+    return;
     //Read the csv and add each mint as a single line
     let list_to_mint :MintRequirement[] = [];
     let data : string = require("fs").readFileSync(CSV_PATH, "utf8").toString();
@@ -30,11 +31,11 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0x3f42AEAD9b5D003be4fD8929756E34f5420327ff";
+    const runiverseMinterContractAddress = "0x7F4eeA5F7E593bc4473A79E373Fb9092cBb48c66";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0x424fbb92BeEf7F3542B06F393874dCb462EBF2F4";
+    const runiverseContractAddress = "0x64D9874114ffc9f1dFF89BDC6E06623064B785a3";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     await delay(2500);

@@ -11,7 +11,12 @@ async function deploy() {
         const RuniverseMinterContract = await ethers.getContractFactory("RuniverseLandMinter");
         const hardhatRuniverseMinterContract = await RuniverseMinterContract.deploy(hardhatRuniverseContract.address);
         console.log('Runiverse Minter Address:', hardhatRuniverseMinterContract.address);
-        await hardhatRuniverseContract.setPrimaryMinter(hardhatRuniverseMinterContract.address);
+        let tx = await hardhatRuniverseContract.setPrimaryMinter(hardhatRuniverseMinterContract.address);
+        
+        console.log(tx);
+        let re = await tx.wait();
+        console.log(re);
+
   }
   
   deploy()
