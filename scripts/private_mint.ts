@@ -30,11 +30,11 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    const runiverseMinterContractAddress = "0x5250e0CdEFDBA15C64B9Cf6e0AdedAeDB43fa71A";
+    const runiverseMinterContractAddress = "0x3f42AEAD9b5D003be4fD8929756E34f5420327ff";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    const runiverseContractAddress = "0xb293D44864b8E02318792369C3eF9ec5e9AC5F92";
+    const runiverseContractAddress = "0x424fbb92BeEf7F3542B06F393874dCb462EBF2F4";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     await delay(2500);
