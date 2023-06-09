@@ -17,10 +17,10 @@ abstract contract ERC721Vestable is ERC721 {
     uint256 public lastVestingGlobalId = 10924;
 
     /// @notice the time the vesting started
-    uint256 public vestingStart = 1671840000; // Dec 24th, 2022
+    uint256 public vestingStart = 1674172801; // Jan 20th, 2023. 23:59 gmt
 
     /// @notice the time the vesting ends
-    uint256 public vestingEnd = 1734998400; // Dec 24th, 2024
+    uint256 public vestingEnd = 1737331201; // Jan 20th, 2025. 23:59 gmt
 
     /// Invalid Vesting Global Id, the gived Global ID : "`gived_global_id`" must be greater than 0
     /// @param gived_global_id Global id.
@@ -112,7 +112,7 @@ abstract contract ERC721Vestable is ERC721 {
     function _setVestingStart(uint256 _newVestingStart) internal virtual {
         require(
             _newVestingStart < vestingEnd,
-            "Start must be less than start"
+            "Start must be less than end"
         );
         vestingStart = _newVestingStart;
     }

@@ -4,12 +4,13 @@ type MintRequirement = { address: string, plot_type: number };
 //Setup vars
 const CSV_PATH = "scripts/private_plots.csv";
 const SEED = 0;
-const MINT_LIST_START = 0;
-const MINT_LIST_END = 9000;
+const MINT_LIST_START = 2;
+//const MINT_LIST_END = 1;
+const MINT_LIST_END = 10923;   //Be careful, is 0 index based!!
 const BATCH_SIZE = 100;
 
 async function private_mint() {
-
+    return;
     //Read the csv and add each mint as a single line
     let list_to_mint :MintRequirement[] = [];
     let data : string = require("fs").readFileSync(CSV_PATH, "utf8").toString();
@@ -30,13 +31,11 @@ async function private_mint() {
     const [owner] = await ethers.getSigners();
     
     //This is hardhat address, change when deployed to another network.
-    //const runiverseMinterContractAddress = "0xC137DB16d7cf8a749e1017839F699649106b8bC2"; //goerli
-    const runiverseMinterContractAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+    const runiverseMinterContractAddress = "0x7F4eeA5F7E593bc4473A79E373Fb9092cBb48c66";
     const runiverseMinterContract = await ethers.getContractAt("RuniverseLandMinter", runiverseMinterContractAddress);
 
     //This is hardhat address, change when deployed to another network.
-    //const runiverseContractAddress = "0xDE6250Ac0CD9532d96b50bA9A45d104d657Bb8Ca"; //goerli
-    const runiverseContractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+    const runiverseContractAddress = "0x64D9874114ffc9f1dFF89BDC6E06623064B785a3";
     const runiverseContract = await ethers.getContractAt("RuniverseLand", runiverseContractAddress);
 
     await delay(2500);
@@ -49,6 +48,8 @@ async function private_mint() {
         const mint_request = shuffled_list_to_mint[r];
         const originalGasPrice = await runiverseMinterContract.provider.getGasPrice();            
         const gasPrice = (originalGasPrice).add( originalGasPrice.div( ethers.BigNumber.from('10') ) );
+        //const gasPrice = (originalGasPrice).mul( ethers.BigNumber.from('1') );
+
         console.log('Preparing transaction', gasPrice);
         let addresses = new Array <string>(); 
         let plotSizes = new Array <number>(); 
@@ -57,12 +58,12 @@ async function private_mint() {
             plotSizes.push(shuffled_list_to_mint[c].plot_type);
             console.log('Batch mint', c, shuffled_list_to_mint[c].address, shuffled_list_to_mint[c].plot_type);
         }
-        console.log( addresses.length, plotSizes.length );
-        
+        console.log("Waiting for tx");
         const tx = await runiverseMinterContract.ownerMint(plotSizes, addresses, {gasLimit: 8000000, gasPrice:gasPrice })
         .catch( (error) => {errorMessage("Transaction sending error", r, error);} );
         
         if(tx){
+            console.log("Waiting for receipt");
             let receipt = await tx.wait().catch( (error) => {errorMessage("Tx.Wait() error", r, error);} );                    
             onMinted(receipt, r);
         }

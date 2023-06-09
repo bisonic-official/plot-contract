@@ -139,7 +139,7 @@ describe("Setters and getters test", function () {
         await hardhatRuniverseContract.setVestingStart( startTimeVesting );
         await expect(  hardhatRuniverseContract.setVestingEnd( mintClaimStartTime ) ).to.be.revertedWith("End must be greater than start");
         await hardhatRuniverseContract.setVestingEnd( endTimeVesting );
-        await expect(  hardhatRuniverseContract.setVestingStart( badStartTimeVesting ) ).to.be.revertedWith("Start must be less than start");
+        await expect(  hardhatRuniverseContract.setVestingStart( badStartTimeVesting ) ).to.be.revertedWith("Start must be less than end");
         
         //LastVestingGlobalId + 1 should be free of vesting
         await expect( await hardhatRuniverseContract.isVestingToken( tokenIds[5] )).to.be.equal(false);
@@ -506,6 +506,117 @@ describe("Mint Test", function () {
         await expect( await hardhatRuniverseMinterContract.claimsStarted() ).to.be.equal(false);
         await ethers.provider.send("evm_mine", [afterTimeClaimList]) ;
         await expect( await hardhatRuniverseMinterContract.claimsStarted() ).to.be.equal(true);    
+
+    });
+  });
+
+
+
+  describe("Marketplace blacklist", function () {
+    it("Marketplace blacklist should work.", async function () {
+        const [owner, addr1, addr2] = await ethers.getSigners();
+
+        const RuniverseContract = await ethers.getContractFactory("RuniverseLand");
+        const hardhatRuniverseContract = await RuniverseContract.deploy('http://localhost:9080/GetPlotInfo?PlotId=');
+        
+        const RuniverseMinterContract = await ethers.getContractFactory("RuniverseLandMinter");
+        const hardhatRuniverseMinterContract = await RuniverseMinterContract.deploy(hardhatRuniverseContract.address);
+        hardhatRuniverseContract.setPrimaryMinter(hardhatRuniverseMinterContract.address);
+
+        const plotPrices = [ethers.utils.parseEther("0.01"),ethers.utils.parseEther("0.02"),ethers.utils.parseEther("0.03"),ethers.utils.parseEther("0.04"),ethers.utils.parseEther("0.05")];
+        const plotsAvailable = [ ethers.BigNumber.from('10'), ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10') ,ethers.BigNumber.from('10')];
+        const mintClaimStartTime = ethers.BigNumber.from('0');
+        const mintListStartTime = ethers.BigNumber.from('0');
+        const mintStartTime = ethers.BigNumber.from('0');
+
+
+
+        await hardhatRuniverseMinterContract.setPrices(plotPrices);
+        await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
+        await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
+        await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
+
+        await hardhatRuniverseContract.setVestingEnabled( 0 );
+
+       //Mints an extra plot
+        await hardhatRuniverseMinterContract.ownerMint(
+              [0,0,0,0] , 
+              [ owner.address,
+                owner.address,
+                owner.address,
+                owner.address]);
+
+        //Search for events to know minted plots
+        const sentLogs = await hardhatRuniverseContract.queryFilter(
+            hardhatRuniverseContract.filters.Transfer(owner.address, null),
+        );
+        const receivedLogs = await hardhatRuniverseContract.queryFilter(
+            hardhatRuniverseContract.filters.Transfer(null, owner.address),
+        );
+        const logs = sentLogs.concat(receivedLogs)
+            .sort(
+                (a, b) =>
+                a.blockNumber - b.blockNumber ||
+                a.transactionIndex - b.TransactionIndex,
+            );
+        const owned = new Set();
+        for (const log of logs) {
+            const { tokenId } = log.args;
+            owned.add(tokenId.toString());
+        }
+        const tokenIds = Array.from(owned);
+
+        //Should be 2 plots
+        expect(tokenIds.length).to.equal(4);
+
+        //Normal fail transfer, as is not approved
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[0] ) ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+        //Success approve, now addr1 can transfer tokenIds[0]
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[0] );
+        //Success transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[0] );
+        //Denying add1 as "marketplace"
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, true);        
+        //Address is in blacklist, signer can't approve addr1 to transfer his token
+        await expect( hardhatRuniverseContract.approve(addr1.address, tokenIds[1]) ).to.be.revertedWith("Invalid Marketplace");
+        //If trying to transfer, first require is the market blacklist, so it should fail
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[1] ) ).to.be.revertedWith("Invalid Marketplace");
+        //Removing "addr1" from the blacklist
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, false);
+        //Success approve, now addr1 and add2 can transfer tokenIds[1]
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[1] );      
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[2] );
+        //Correct transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[1] );
+        //Denying the addr1 as marketplace
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address, true);
+        //add2 was not transferred and now addr1 is blocked as marketplace
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[2] ) ).to.be.revertedWith("Invalid Marketplace");
+
+
+        //Addr1 is blocked as marketplace, setApprovalForAll should fail
+        await expect( hardhatRuniverseContract.setApprovalForAll(addr1.address, true ) ).to.be.revertedWith("Invalid Marketplace");
+        //Allowing the  marketplace again
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,false);
+        //Now approved for all tokens
+        await hardhatRuniverseContract.setApprovalForAll(addr1.address, true );
+        //Correct transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[2] );
+        //Denying addr1 as marketplace again
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,true);
+        //Failed trasnfer
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] ) ).to.be.revertedWith("Invalid Marketplace");
+
+        //Allowing marketplace
+        await hardhatRuniverseContract.setDeniedMarketplace(addr1.address,false);
+        //Remiving approval
+        await hardhatRuniverseContract.setApprovalForAll(addr1.address, false );
+        //Normal not approved fail
+        await expect( hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] ) ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved");
+        //Single approving
+        await hardhatRuniverseContract.approve(addr1.address, tokenIds[3] );
+        //Success transfer
+        await hardhatRuniverseContract.connect(addr1).transferFrom(owner.address, addr2.address, tokenIds[3] );
 
     });
   });
