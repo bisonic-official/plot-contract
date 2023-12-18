@@ -3,6 +3,51 @@
 import logging
 
 
+def set_token_uri(w3, contract, private_key, owner_address, token_uri):
+    """Set the token URI.
+
+    Parameters
+    ----------
+    w3 : Web3
+        The web3 object.
+    contract
+        The contract object.
+    private_key : str
+        The private key.
+    owner_address : str
+        The owner address.
+    token_uri : str
+        The token URI.
+
+    Returns
+    -------
+    txn : dict
+        The transaction dictionary.
+    """
+
+    logger = logging.getLogger('plot-minter')
+
+    txn = contract.functions.setBaseURI(token_uri).build_transaction({
+        'nonce':
+        w3.eth.get_transaction_count(owner_address),
+        'gas':
+        1000000
+    })
+
+    # Sign the transaction
+    txn_signed = w3.eth.account.sign_transaction(txn, private_key)
+
+    # Send the transaction and wait for the transaction receipt
+    txn_hash = w3.eth.send_raw_transaction(txn_signed.rawTransaction)
+    txn_receipt = w3.eth.wait_for_transaction_receipt(txn_hash)
+    txn_receipt = txn_receipt.transactionHash.hex()
+
+    log_msg = f"TXN with hash: { txn_receipt }"
+    logger.info(log_msg)
+
+    return txn_receipt
+
+
 def set_vault_address(w3, contract, private_key, owner_address, vault_address):
     """Set the vault address.
 
