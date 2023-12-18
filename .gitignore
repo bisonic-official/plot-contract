@@ -7,3 +7,5 @@ reports/
 node_modules/
 cache/
 artifacts/
+.DS_Store
+*.log
