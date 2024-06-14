@@ -5,13 +5,14 @@
 // Website: https://runiverse.world
 //
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./ERC721Vestable.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./ERC721Common.sol";
 import "./IRuniverseLand.sol";
 
 /**
@@ -29,9 +30,9 @@ import "./IRuniverseLand.sol";
  * upgrades without downtime.
  */
 contract RuniverseLand is
+    ERC721Common,
     Ownable,
     ReentrancyGuard,
-    ERC721Vestable,
     IRuniverseLand
 {
     using Strings for uint256;
@@ -57,6 +58,28 @@ contract RuniverseLand is
     /// @notice Whitelist for markets
     mapping(address => bool) private _deniedMarketplaces;
 
+    // VESTABLE OPTIONS
+
+    /// @notice master switch for vesting
+    uint256 public vestingEnabled = 1;
+
+    /// @notice the tokens from 0 to lastVestedTokenId will vest over time
+    uint256 public lastVestingGlobalId = 10924;
+
+    /// @notice the time the vesting started
+    uint256 public vestingStart = 1674172801; // Jan 20th, 2023. 23:59 gmt
+
+    /// @notice the time the vesting ends
+    uint256 public vestingEnd = 1737331201; // Jan 20th, 2025. 23:59 gmt
+
+    /// Invalid Vesting Global Id, the gived Global ID : "`gived_global_id`" must be greater than 0
+    /// @param gived_global_id Global id.
+    error InvalidVestingGlobalId(uint256 gived_global_id);
+
+    /// Token Not Vested, The Vesting date is the next one `gived_global_id`
+    /// @param current_time Current time on chain.
+    /// @param token_vesting_time Vesting time.
+    error TokenNotVested(uint256 current_time, uint256 token_vesting_time);
 
     string private constant R = "I should like to save the Shire, if I could";
 
@@ -64,10 +87,156 @@ contract RuniverseLand is
      * @dev Create the contract and set the initial baseURI
      * @param baseURI string the initial base URI for the token metadata URL
      */
-    constructor(string memory baseURI) ERC721("RuniverseLand", "RUNIVERSE") {
+    constructor(
+        string memory baseURI
+    ) ERC721Common("RuniverseLand", "RUNIVERSE", baseURI) {
         baseTokenURI = baseURI;
+        _baseTokenURI = baseURI;
     }
 
+    /**
+     * @dev Pause contract.
+     */
+    function pauseContract() external onlyOwner {
+        if (!this.paused()) {
+            _pause();
+        }
+    }
+
+    /**
+     * @dev Unpause contract.
+     */
+    function unpauseContract() external onlyOwner {
+        if (this.paused()) {
+            _unpause();
+        }
+    }
+
+    /**
+     * @dev Overrides _beforeTokenTransfer
+     * see {https://docs.openzeppelin.com/contracts/4.x/api/token/erc721#ERC721-_beforeTokenTransfer-address-address-uint256-uint256-}.
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal override(ERC721Common) {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        uint256 globalId = getGlobalId(firstTokenId);
+        if (
+            vestingEnabled == 1 &&
+            from != address(0) && // minting
+            globalId <= lastVestingGlobalId &&
+            block.timestamp < vestingEnd
+        ) {
+            uint256 vestingDuration = vestingEnd - vestingStart;
+
+            if (
+                block.timestamp <
+                (vestingDuration * globalId) /
+                    lastVestingGlobalId +
+                    vestingStart
+            ) {
+                revert TokenNotVested({
+                    current_time: block.timestamp,
+                    token_vesting_time: (vestingDuration * globalId) /
+                        lastVestingGlobalId +
+                        vestingStart
+                });
+            }
+        }
+    }
+
+    /**
+     *
+     * @param ownerAddress address of owner.
+     * @return tokensOwned uint256 with IDs of owned tokens.
+     */
+    function getTokens(
+        address ownerAddress
+    ) public view returns (uint256[] memory) {
+        uint256 numTokensOwned = this.balanceOf(ownerAddress);
+        uint256[] memory tokensOwned = new uint256[](numTokensOwned);
+
+        for (uint256 index = 0; index < numTokensOwned; index++) {
+            tokensOwned[index] = this.tokenOfOwnerByIndex(ownerAddress, index);
+        }
+
+        return tokensOwned;
+    }
+
+    /**
+     * @notice returns true if a tokenId has besting property.
+     */
+    function isVestingToken(uint256 tokenId) external view returns (bool) {
+        uint256 globalId = getGlobalId(tokenId);
+        return globalId <= lastVestingGlobalId;
+    }
+
+    /**
+     * @notice returns the time when a tokenId will be vested.
+     */
+    function vestsAt(uint256 tokenId) public view returns (uint256) {
+        uint256 globalId = getGlobalId(tokenId);
+        uint256 vestingDuration = vestingEnd - vestingStart;
+        return
+            (vestingDuration * globalId) / lastVestingGlobalId + vestingStart;
+    }
+
+    /**
+     * @notice returns true if a tokenId is already vested.
+     */
+    function isVested(uint256 tokenId) public view returns (bool) {
+        uint256 globalId = getGlobalId(tokenId);
+        if (vestingEnabled == 0) return true;
+        if (globalId > lastVestingGlobalId) return true;
+        if (block.timestamp > vestingEnd) return true;
+        return block.timestamp >= vestsAt(tokenId);
+    }
+
+    /**
+     * @notice set the vesting toggle
+     */
+    function _setVestingEnabled(uint256 _newVestingEnabled) internal virtual {
+        vestingEnabled = _newVestingEnabled;
+    }
+
+    /**
+     * @notice set the last vesting token Id
+     */
+    function _setLastVestingGlobalId(uint256 _newTokenId) internal virtual {
+        if (_newTokenId <= 0) {
+            revert InvalidVestingGlobalId({gived_global_id: _newTokenId});
+        }
+        lastVestingGlobalId = _newTokenId;
+    }
+
+    /**
+     * @notice set the new vesting start time
+     */
+    function _setVestingStart(uint256 _newVestingStart) internal virtual {
+        require(_newVestingStart < vestingEnd, "Start must be less than end");
+        vestingStart = _newVestingStart;
+    }
+
+    /**
+     * @notice set the new vesting start time
+     */
+    function _setVestingEnd(uint256 _newVestingEnd) internal virtual {
+        require(
+            _newVestingEnd > vestingStart,
+            "End must be greater than start"
+        );
+        vestingEnd = _newVestingEnd;
+    }
+
+    /**
+     * @notice extracts global id from token id
+     */
+    function getGlobalId(uint256 tokenId) public pure returns (uint256) {
+        return tokenId >> 40;
+    }
 
     /**
      * @notice Mint a new token with a specific id
@@ -80,7 +249,7 @@ contract RuniverseLand is
         uint256 tokenId,
         PlotSize size
     ) public override nonReentrant {
-        if(numMinted >= MAX_SUPPLY){
+        if (numMinted >= MAX_SUPPLY) {
             revert NoPlotsAvailable();
         }
         require(
@@ -88,24 +257,19 @@ contract RuniverseLand is
             "Not a minter"
         );
         ++numMinted;
-        emit LandMinted(recipient, tokenId, size);    
-        
+        emit LandMinted(recipient, tokenId, size);
+
         _mint(recipient, tokenId);
     }
-
 
     /**
      * @dev Returns the URL of a given tokenId
      * @param tokenId uint256 ID of the token to be minted
      * @return string the URL of a given tokenId
      */
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         require(
             _exists(tokenId),
             "ERC721Metadata: URI query for nonexistent token"
@@ -125,7 +289,7 @@ contract RuniverseLand is
 
     /**
      * @dev Returns the base uri of the token.
-     * @return _baseURI string prefix uri. 
+     * @return _baseURI string prefix uri.
      */
     function _baseURI() internal view virtual override returns (string memory) {
         return baseTokenURI;
@@ -135,7 +299,12 @@ contract RuniverseLand is
      * @dev Returns the total number of minted lands.
      * @return totalSupply uint256 the number of minted lands.
      */
-    function totalSupply() external view returns (uint256) {
+    function totalSupply()
+        public
+        view
+        override(ERC721Enumerable)
+        returns (uint256)
+    {
         return numMinted;
     }
 
@@ -147,8 +316,9 @@ contract RuniverseLand is
      * @dev Sets a new base URI
      * @param newBaseURI string the new token base URI
      */
-    function setBaseURI(string calldata newBaseURI) public onlyOwner {
+    function setNewBaseURI(string calldata newBaseURI) public onlyOwner {
         baseTokenURI = newBaseURI;
+        _baseTokenURI = newBaseURI;
     }
 
     /**
@@ -156,7 +326,10 @@ contract RuniverseLand is
      * @param newPrimaryMinter address of the new minter
      */
     function setPrimaryMinter(address newPrimaryMinter) external onlyOwner {
-        require(newPrimaryMinter != address(0), "Invalid primary minter address");
+        require(
+            newPrimaryMinter != address(0),
+            "Invalid primary minter address"
+        );
         primaryMinter = newPrimaryMinter;
     }
 
@@ -165,7 +338,10 @@ contract RuniverseLand is
      * @param newSecondaryMinter address of the new secondary minter
      */
     function setSecondaryMinter(address newSecondaryMinter) external onlyOwner {
-        require(newSecondaryMinter != address(0), "Invalid seecondary minter address");
+        require(
+            newSecondaryMinter != address(0),
+            "Invalid seecondary minter address"
+        );
         secondaryMinter = newSecondaryMinter;
     }
 
@@ -203,7 +379,10 @@ contract RuniverseLand is
      * @param to address to approve transfer
      * @param tokenId token be transferred allowed by to
      */
-    function approve(address to, uint256 tokenId) public virtual override {        
+    function approve(
+        address to,
+        uint256 tokenId
+    ) public virtual override(IERC721, ERC721) {
         require(!_deniedMarketplaces[to], "Invalid Marketplace");
         super.approve(to, tokenId);
     }
@@ -213,7 +392,10 @@ contract RuniverseLand is
      * @param operator address to approve transfer
      * @param approved enable or disable transfer
      */
-    function setApprovalForAll(address operator, bool approved) public virtual override {        
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override(IERC721, ERC721) {
         require(!_deniedMarketplaces[operator], "Invalid Marketplace");
         super.setApprovalForAll(operator, approved);
     }
@@ -224,9 +406,12 @@ contract RuniverseLand is
      * @param operator marketplace address
      * @return true if all the tokens are approved to be trasnferred by operator.
      */
-   function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {
-        require(!_deniedMarketplaces[operator], "Invalid Marketplace");        
-        return  super.isApprovedForAll( owner, operator );
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view virtual override(IERC721, ERC721) returns (bool) {
+        require(!_deniedMarketplaces[operator], "Invalid Marketplace");
+        return super.isApprovedForAll(owner, operator);
     }
 
     /**
@@ -234,18 +419,23 @@ contract RuniverseLand is
      * @param tokenId Id of the token to check if is approved.
      * @return address that is allowed to transfer the tokenId
      */
-    function getApproved(uint256 tokenId) public view virtual override returns (address) {
+    function getApproved(
+        uint256 tokenId
+    ) public view virtual override(IERC721, ERC721) returns (address) {
         address addr = super.getApproved(tokenId);
-        require(!_deniedMarketplaces[addr], "Invalid Marketplace");        
+        require(!_deniedMarketplaces[addr], "Invalid Marketplace");
         return addr;
     }
 
     /**
      * @notice Add or remove an address for the market blacklist
      * @param market market place address
-     * @param denied deny (true) or allow (false) a marketplace 
+     * @param denied deny (true) or allow (false) a marketplace
      */
-    function setDeniedMarketplace(address market, bool denied) public onlyOwner {        
+    function setDeniedMarketplace(
+        address market,
+        bool denied
+    ) public onlyOwner {
         _deniedMarketplaces[market] = denied;
     }
 
@@ -255,7 +445,7 @@ contract RuniverseLand is
      */
     function withdrawAll() external payable onlyOwner {
         (bool success, ) = msg.sender.call{value: address(this).balance}("");
-         require(success, "withdraw was not succesfull");
+        require(success, "withdraw was not succesfull");
     }
 
     /**
@@ -265,7 +455,7 @@ contract RuniverseLand is
      * @param amount uint256 the amount to send
      */
     function forwardERC20s(IERC20 token, uint256 amount) external onlyOwner {
-        if(address(msg.sender) == address(0)){
+        if (address(msg.sender) == address(0)) {
             revert Address0Error();
         }
         token.transfer(msg.sender, amount);

@@ -1,31 +1,27 @@
 require("@nomicfoundation/hardhat-toolbox");
+require('solidity-coverage');
 
-const ALCHEMY_API_KEY = "Xl0pm6KtG500eaYf2p89MHHJWdqbVSVh";
-const GOERLI_PRIVATE_KEY = "4f768fd6721871e27706d8c43470b890e29d1c361c5e9594303e5b0df51ec0df";
+// Go to https://www.alchemyapi.io, sign up, create
+// a new App in its dashboard, and replace "KEY" with its key
+const ALCHEMY_API_KEY = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // Needs to be changed according to the network
 
+// Replace this private key with your Goerli account private key
+// To export your private key from Metamask, open Metamask and
+// go to Account Details > Export Private Key
+// Beware: NEVER put real Ether into testing accounts
+const SEPOLIA_PRIVATE_KEY = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-    networks: {
-        hardhat: {
-            hardfork: "london",
-            // base fee of 0 allows use of 0 gas price when testing
-            initialBaseFeePerGas: 0,
-            // brownie expects calls and transactions to throw on revert
-            throwOnTransactionFailures: true,
-            throwOnCallFailures: true
-       },
-       goerli: {
-        url: 'https://eth-goerli.g.alchemy.com/v2/Xl0pm6KtG500eaYf2p89MHHJWdqbVSVh',
-        accounts: ['4f768fd6721871e27706d8c43470b890e29d1c361c5e9594303e5b0df51ec0df']
-      }
+  solidity: "0.8.19",
+  defaultNetwork: "hardhat",
+  networks: {
+    hardhat: {
+      allowUnlimitedContractSize: true,
     },
-    solidity:{
-        compilers: [
-          {
-            version: "0.8.0",
-          },
-          {
-            version: "0.8.6",
-          }
-        ],
-      },
-}
+    goerli: {
+      url: `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+      accounts: [SEPOLIA_PRIVATE_KEY]
+    }
+  }
+};
