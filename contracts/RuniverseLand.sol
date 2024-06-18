@@ -309,6 +309,14 @@ contract RuniverseLand is
     }
 
     /**
+     * @dev Returns the base URI of the token.
+     * @return baseTokenURI String value of base Token URI.
+     */
+    function getBaseURI() external view returns (string memory) {
+        return baseTokenURI;
+    }
+
+    /**
      * Only the owner can do these things
      */
 

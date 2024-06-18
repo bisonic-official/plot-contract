@@ -341,6 +341,69 @@ describe("🔥 Mint Test + Enumerability", function () {
   });
 });
 
+describe("🔥 Test pausing and unpausing contract", function () {
+  it("Pausing contract should pause minting", async function () {
+    const [user, signer, hacker] = await ethers.getSigners();
+
+    const RuniverseContract = await ethers.getContractFactory("RuniverseLand");
+    const hardhatRuniverseContract = await RuniverseContract.deploy(
+      'http://localhost:9080/GetPlotInfo?PlotId='
+    );
+
+    const RuniverseMinterContract = await ethers.getContractFactory("RuniverseLandMinter");
+    const hardhatRuniverseMinterContract = await RuniverseMinterContract.deploy(
+      hardhatRuniverseContract.address
+    );
+    hardhatRuniverseContract.setPrimaryMinter(hardhatRuniverseMinterContract.address);
+    hardhatRuniverseContract.setSecondaryMinter(hardhatRuniverseMinterContract.address);
+
+    const plotPrices = [
+      ethers.utils.parseEther("0.01"),
+      ethers.utils.parseEther("0.02"),
+      ethers.utils.parseEther("0.03"),
+      ethers.utils.parseEther("0.04"),
+      ethers.utils.parseEther("0.05")
+    ];
+    const mintClaimStartTime = ethers.BigNumber.from('0');
+    const mintListStartTime = ethers.BigNumber.from('0');
+    const mintStartTime = ethers.BigNumber.from('0');
+
+    await hardhatRuniverseMinterContract.setPrices(plotPrices);
+    await hardhatRuniverseMinterContract.setPublicMintStartTime(mintStartTime);
+    await hardhatRuniverseMinterContract.setMintlistStartTime(mintListStartTime);
+    await hardhatRuniverseMinterContract.setClaimsStartTime(mintClaimStartTime);
+
+    await hardhatRuniverseContract.setVestingEnabled(0);
+
+    // Mint before pausing contract 
+    hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") })
+
+    // Verify only owner can pause contract minting
+    await expect(hardhatRuniverseContract.connect(hacker).pauseContract()).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    // Pause contract minting
+    await hardhatRuniverseContract.pauseContract();
+
+    // Should revert with paused minting 
+    await expect(
+      hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") })
+    ).to.be.revertedWith("ERC721Pausable: token transfer while paused");
+
+    // Verify only owner can unpause contract minting
+    await expect(hardhatRuniverseContract.connect(hacker).unpauseContract()).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    // Unpause contract minting
+    await hardhatRuniverseContract.unpauseContract();
+
+    // Verify signature and mint token
+    await hardhatRuniverseMinterContract.mint(0, 1, { value: ethers.utils.parseEther("0.01") });
+  });
+});
+
 
 
 describe("🔥 Whitelist Test", function () {
@@ -554,9 +617,14 @@ describe("🔥 URI Test", function () {
 
     await hardhatRuniverseMinterContract.ownerMint([0], [owner.address]);
 
+    // Test Token URI
     const tokenUri_0 = await hardhatRuniverseContract.tokenURI(tokenId);
     await expect(tokenUri_0).to.be.equal("http://localhost:9080/GetPlotInfo?PlotId=1099511628032");
     await hardhatRuniverseContract.setNewBaseURI("https://api.runiverse.world/GetPlotInfo?PlotId=")
+    expect(
+      await hardhatRuniverseContract.getBaseURI()
+    ).to.be.equal("https://api.runiverse.world/GetPlotInfo?PlotId=");
+
 
     const tokenUri_1 = await hardhatRuniverseContract.tokenURI(tokenId);
     await expect(tokenUri_1).to.be.equal("https://api.runiverse.world/GetPlotInfo?PlotId=1099511628032");
