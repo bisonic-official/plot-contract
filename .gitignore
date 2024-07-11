@@ -1,3 +1,8 @@
+# Extras
+.DS_Store
+deployments
+coverage
+
 __pycache__
 .env
 .history

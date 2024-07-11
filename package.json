@@ -18,10 +18,11 @@
   "homepage": "https://github.com/bisonic-official/plot-contract#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "hardhat": "^2.19.5"
+    "hardhat": "^2.22.6"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.2",
+    "hardhat-deploy": "^0.12.4",
     "solidity-coverage": "^0.8.2"
   }
 }
