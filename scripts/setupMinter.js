@@ -20,6 +20,9 @@ async function main() {
     const contract = new ethers.Contract(contractAddress, contractABI, provider);
     const contractWithSigner = contract.connect(signer);
 
+    const mainContract = await contract.runiverseLand();
+    console.log("Main contract address:", mainContract);
+
     // Owner mint
     let transaction = await contractWithSigner.ownerMint(
         [], // plotSizes

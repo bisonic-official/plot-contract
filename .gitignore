@@ -1,6 +1,6 @@
 # Extras
 .DS_Store
-deployments
+deployments*
 coverage
 
 __pycache__

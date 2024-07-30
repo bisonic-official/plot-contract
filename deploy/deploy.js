@@ -9,7 +9,7 @@ const func = async function (hre) {
         const runiverseLandContract = await deploy('RuniverseLand', {
             from: deployer,
             args: [
-                "https://api.runiverse.world/GetPlotInfo?PlotId="
+                "https://api.runiverse.world/GetNewPlotInfo?PlotId="
             ],
             log: true,
             gasPrice: 30000000000

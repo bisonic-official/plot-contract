@@ -11,6 +11,7 @@ async function main() {
 
     // Create an ethers.js provider
     const provider = new ethers.providers.JsonRpcProvider('https://saigon-testnet.roninchain.com/rpc');
+    // const provider = new ethers.providers.JsonRpcProvider('https://api.roninchain.com/rpc');
     const signer = new ethers.Wallet(
         '', // Wallet secret key
         provider
@@ -20,8 +21,28 @@ async function main() {
     const contract = new ethers.Contract(contractAddress, contractABI, provider);
     const contractWithSigner = contract.connect(signer);
 
+    // Get minters
+    const primaryMinter = await contract.primaryMinter();
+    console.log("Primary minter:", primaryMinter);
+    const secondaryMinter = await contract.secondaryMinter();
+    console.log("Secondary minter:", secondaryMinter);
+
+    // Set minters
+    const primaryAddress = '0xF8492A2f0EAAb896F6b54E07d1506be9285A2500';
+    let transaction = await contractWithSigner.setPrimaryMinter(
+        primaryAddress, { gasPrice: 30000000000 }
+    );
+    await transaction.wait();
+
+    const secondaryAddress = '';
+    transaction = await contractWithSigner.setSecondaryMinter(secondaryAddress);
+    await transaction.wait();
+    console.log("Minters set!");
+    console.log("Primary minter:", await contract.primaryMinter());
+    console.log("Secondary minter:", await contract.secondaryMinter());
+
     // Pause contract
-    let transaction = await contractWithSigner.pauseContract();
+    transaction = await contractWithSigner.pauseContract();
     await transaction.wait();
     console.log("Contract paused!");
 
