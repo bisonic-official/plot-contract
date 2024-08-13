@@ -354,7 +354,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
                 current_date: block.timestamp
             });
         }
-        if (numPlots <= 0 && numPlots > 20) {
+        if (numPlots <= 0 || numPlots > 20) {
             revert IncorrectPurchaseLimit();
         }
         _mintTokensCheckingValue(plotSize, numPlots, msg.sender);
