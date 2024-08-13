@@ -1,0 +1,45 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "INFTLaunchpad",
+  "sourceName": "contracts/interfaces/launchpad/INFTLaunchpad.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "quantity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "name": "mintLaunchpad",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "mintedTokenIds",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "mintedAmounts",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

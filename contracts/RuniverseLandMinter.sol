@@ -19,6 +19,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     /// @notice Address to the vault where we can withdraw
     address payable public vault;
 
+    /// @notice Address of the valid signer in contract.
+    address public signer;
+
     uint256[] plotsAvailablePerSize = [
         52500, // 8x8
         16828, // 16x16
@@ -61,6 +64,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     /// @notice stores the number actually minted per plot size
     mapping(uint256 => uint256) public plotsMinted;
 
+    /// @notice stores the number actually minted per wallet
+    mapping(address => uint256) internal nonce;
+
     /// @notice stores the number minted by this address in the mintlist by size
     mapping(address => mapping(uint256 => uint256))
         public mintlistMintedPerSize;
@@ -76,6 +82,7 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     constructor(IRuniverseLand _runiverseLand) {
         setRuniverseLand(_runiverseLand);
         setVaultAddress(payable(msg.sender));
+        signer = address(0);
     }
 
     /**
@@ -100,6 +107,18 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
      */
     function publicStarted() public view returns (bool) {
         return block.timestamp >= publicMintStartTime;
+    }
+
+    /**
+     * @dev Returns the signer address of contract.
+     * @return signer Address of the valid signer in contract.
+     */
+    function getSigner() external view returns (address) {
+        return signer;
+    }
+
+    function getNonce(address userAddress) external view returns (uint256) {
+        return nonce[userAddress];
     }
 
     /**
@@ -183,6 +202,117 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
         plotsAvailableBySize[4] = plotsAvailablePerSize[4] - plotsMinted[4];
 
         return plotsAvailableBySize;
+    }
+
+    /**
+     * @dev Verifies if the signature corresponds to the signer.
+     * @param _message Message to verify with signature.
+     * @param _signature Signature used to verify the message.
+     * @return bool Returns if the signature is valid or not.
+     */
+    function verify(
+        string memory _message,
+        bytes memory _signature
+    ) public view returns (bool) {
+        bytes32 messageHash = getMessageHash(_message);
+        bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
+
+        return recover(ethSignedMessageHash, _signature) == signer;
+    }
+
+    /**
+     * @dev Returns the message hash that is signed to create the signature.
+     * @param _message Message to be hashed.
+     * @return bytes32 Hash of the message.
+     */
+    function getMessageHash(
+        string memory _message
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_message));
+    }
+
+    /**
+     * @dev Returns the message hash that is signed to create the signature.
+     * @param _messageHash Hash of the message to be signed.
+     * @return bytes32 Hash of the message.
+     */
+    function getEthSignedMessageHash(
+        bytes32 _messageHash
+    ) public pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    "\x19Ethereum Signed Message:\n32",
+                    _messageHash
+                )
+            );
+    }
+
+    /**
+     * @dev Split signature and recover signer address.
+     * @param _ethSignedMessageHash Hash of the signed message.
+     * @param _signature Signature to split.
+     * @return address Address of the signer.
+     */
+    function recover(
+        bytes32 _ethSignedMessageHash,
+        bytes memory _signature
+    ) private pure returns (address) {
+        (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
+
+        return ecrecover(_ethSignedMessageHash, v, r, s);
+    }
+
+    /**
+     * @dev Split signature into `r`, `s` and `v` variables, used by recover method.
+     * @param _signature Signature to split.
+     * @return r
+     * @return s
+     * @return v
+     */
+    function splitSignature(
+        bytes memory _signature
+    ) internal pure returns (bytes32 r, bytes32 s, uint8 v) {
+        require(_signature.length == 65, "Invalid signature length!");
+
+        assembly {
+            // First 32 bytes stores the length of the signature
+            r := mload(add(_signature, 32))
+            // Next 32 bytes stores the length of the signature
+            s := mload(add(_signature, 64))
+            // Final byte stores the signature type
+            v := byte(0, mload(add(_signature, 96)))
+        }
+    }
+
+    /**
+     * @dev Method to verify a message and mint an RuniverseItem to an address. Used for public minting.
+     * @param signature Signature used to verify the message.
+     * @param plotSize type of the land token to be minted.
+     */
+    function verifyAndMint(
+        bytes memory signature,
+        IRuniverseLand.PlotSize plotSize
+    ) public {
+        string memory message = string.concat(
+            Strings.toHexString(msg.sender),
+            "_",
+            Strings.toString(uint256(plotSize)),
+            "_",
+            Strings.toString(nonce[msg.sender])
+        );
+
+        require(this.verify(message, signature), "Bad signature");
+
+        // Get next id per type
+        uint256 tokenId = ownerGetNextTokenId(plotSize);
+        ++plotsMinted[uint256(plotSize)];
+
+        // Mint token
+        runiverseLand.mintTokenId(msg.sender, tokenId, plotSize);
+
+        // Update nonce
+        nonce[msg.sender] += 1;
     }
 
     /**
@@ -481,6 +611,14 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev Sets the valid signer address of contract.
+     * @param _signer Address of the signer.
+     */
+    function setSigner(address _signer) external onlyOwner {
+        signer = _signer;
+    }
+
+    /**
      * @dev Assigns the vault address.
      * @param _newVaultAddress address vault address.
      */
@@ -584,6 +722,9 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     /// @param sended_values Total gived values.
     /// @param expected Total needed values.
     error GivedValuesNotValid(uint256 sended_values, uint256 expected);
+
+    /// Bad signature error
+    error BadSignature();
 
     error Address0Error();
 }

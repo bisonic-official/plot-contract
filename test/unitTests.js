@@ -2,6 +2,20 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const ERC721 = require('@openzeppelin/contracts/build/contracts/ERC721.json');
 
+const generateSignature = async (address, plotSize, contract, signer) => {
+  const nonce = await contract.getNonce(address);
+
+  const raw_msg = new Array(address.toLowerCase(), plotSize, nonce);
+  const message = raw_msg.join("_");
+
+  const hash = await contract.getMessageHash(message);
+
+  return {
+    signature: await signer.signMessage(ethers.utils.arrayify(hash)),
+    message,
+  };
+};
+
 const expected_errors = [
   "function InvalidVestingGlobalId(uint256 gived_global_id)",
   "function TokenNotVested(uint256 current_time,uint256 token_vesting_time)",
@@ -338,6 +352,135 @@ describe("🔥 Mint Test + Enumerability", function () {
     expect(await hardhatRuniverseMinterContract.provider.getBalance(hardhatRuniverseMinterContract.address)).to.equal(mintClaimStartTime);
 
     await hardhatRuniverseContract.withdrawAll();
+  });
+});
+
+describe("🔥 Verify signature + mint + enumerability", function () {
+  it("Check if signer matches with recovered signer", async function () {
+    const [user, signer] = await ethers.getSigners();
+
+    // Deploy contracts
+    const RuniverseLand = await ethers.getContractFactory("RuniverseLand");
+    const runiverseLand = await RuniverseLand.deploy(
+      'http://localhost:9080/GetPlotInfo?PlotId='
+    );
+
+    const RuniverseLandMinter = await ethers.getContractFactory("RuniverseLandMinter");
+    const runiverseLandMinter = await RuniverseLandMinter.deploy(
+      runiverseLand.address
+    );
+
+    await runiverseLand.setPrimaryMinter(runiverseLandMinter.address);
+    await runiverseLandMinter.setSigner(signer.address);
+
+    const plot_type = 0;
+    const { message, signature } = await generateSignature(
+      user.address,
+      plot_type,
+      runiverseLandMinter,
+      signer
+    );
+
+    // Correct signature and message returns true
+    expect(await runiverseLandMinter.verify(message, signature)).to.equal(true);
+  });
+
+  it("Verify signer and mint token function + test enumerability", async function () {
+    const [user, signer, hacker] = await ethers.getSigners();
+
+    // Deploy contracts
+    const RuniverseLand = await ethers.getContractFactory("RuniverseLand");
+    const runiverseLand = await RuniverseLand.deploy(
+      'http://localhost:9080/GetPlotInfo?PlotId='
+    );
+
+    const RuniverseLandMinter = await ethers.getContractFactory("RuniverseLandMinter");
+    const runiverseLandMinter = await RuniverseLandMinter.deploy(
+      runiverseLand.address
+    );
+
+    await runiverseLand.setPrimaryMinter(runiverseLandMinter.address);
+    await runiverseLandMinter.setSigner(signer.address);
+
+    const plot_type = 0;
+    const { signature } = await generateSignature(
+      user.address,
+      plot_type,
+      runiverseLandMinter,
+      signer
+    );
+
+    // Verify can't use signature to mint wrong token type
+    await expect(runiverseLandMinter.verifyAndMint(
+      signature, plot_type + 1
+    )).to.be.revertedWith(
+      "Bad signature"
+    );
+
+    // Verify wrong use can't use the same signature
+    await expect(
+      runiverseLandMinter.connect(hacker).verifyAndMint(signature, plot_type)
+    ).to.be.revertedWith("Bad signature");
+
+    // Verify signature and mint token
+    await runiverseLandMinter.verifyAndMint(signature, plot_type);
+
+    // Verify can't use same signature to mint another token - IMPORTANT!
+    await expect(runiverseLandMinter.verifyAndMint(signature, 0)).to.be.revertedWith(
+      "Bad signature"
+    );
+
+    // Check if token was minted
+    const tokens = await runiverseLand.getTokens(user.address);
+    const token_id = tokens[0];
+    expect(await runiverseLand.exists(token_id)).to.equal(true);
+    expect(await runiverseLand.ownerOf(token_id)).to.equal(user.address);
+
+    // Get balance of signer (total of tokens minted by signer)
+    const balanceOf = await runiverseLand.balanceOf(user.address);
+    expect(balanceOf).to.equal(1);
+
+    // Get token of owner by index
+    const tokenOfOwnerByIndex = await runiverseLand.tokenOfOwnerByIndex(
+      user.address, 0
+    );
+    expect(tokenOfOwnerByIndex).to.equal(token_id);
+
+    // Test enumerablity
+    const tokensOwned = await runiverseLand.getTokens(user.address);
+    expect(tokensOwned.length).to.equal(1);
+
+  });
+
+  it("Verify error when signer does not match", async function () {
+    const [user, signer] = await ethers.getSigners();
+
+    // Deploy contracts
+    const RuniverseLand = await ethers.getContractFactory("RuniverseLand");
+    const runiverseLand = await RuniverseLand.deploy(
+      'http://localhost:9080/GetPlotInfo?PlotId='
+    );
+
+    const RuniverseLandMinter = await ethers.getContractFactory("RuniverseLandMinter");
+    const runiverseLandMinter = await RuniverseLandMinter.deploy(
+      runiverseLand.address
+    );
+
+    await runiverseLand.setPrimaryMinter(runiverseLandMinter.address);
+    // Do not set signer to try minting with another signer
+
+    const plot_type = 0;
+    const { signature } = await generateSignature(
+      user.address,
+      plot_type,
+      runiverseLandMinter,
+      signer
+    );
+
+    // Verify signature using another signer
+    await expect(
+      runiverseLandMinter.verifyAndMint(signature, plot_type)
+    ).to.be.revertedWith("Bad signature");
   });
 });
 
