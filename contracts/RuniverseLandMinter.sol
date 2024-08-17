@@ -260,7 +260,13 @@ contract RuniverseLandMinter is Ownable, ReentrancyGuard {
     ) private pure returns (address) {
         (bytes32 r, bytes32 s, uint8 v) = splitSignature(_signature);
 
-        return ecrecover(_ethSignedMessageHash, v, r, s);
+        (address recovered, ECDSA.RecoverError err) = ECDSA.tryRecover(
+            _ethSignedMessageHash,
+            v,
+            r,
+            s
+        );
+        return recovered;
     }
 
     /**
