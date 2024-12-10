@@ -5,7 +5,7 @@ const { ethers } = require("hardhat");
 type PlotRequirement = {
     address_from: string,
     address_to: string,
-    plot_id: string
+    plot_id: BigInt
 };
 
 //Setup vars
@@ -16,6 +16,7 @@ const TRANSFER_LIST_END = 1000000;   //Be careful, is 0 index based!!
 
 const provider = new ethers.providers.JsonRpcProvider("RPC_ADDRESS");
 const privateKey = "PRIVATE_KEY";
+
 const wallet = new ethers.Wallet(privateKey, provider);
 
 async function plot_transfer() {
@@ -31,12 +32,26 @@ async function plot_transfer() {
             {
                 address_from: data_row[0],
                 address_to: data_row[1],
-                plot_id: data_row[2]
+                plot_id: BigInt(data_row[2])
             }
         );
     }
 
     console.log("[INFO] Transfer list:\n", list_to_transfer);
+
+    // Get number of plots per type
+    // const from_id = Math.max(TRANSFER_LIST_START, 0);
+    // const to_id = Math.min(TRANSFER_LIST_END, list_to_transfer.length - 1);
+
+    // let values = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    // for (let r = from_id; r <= to_id; r += 1) {
+    //     const tipo = list_to_transfer[r].plot_id & BigInt(255);
+    //     values[Number(tipo)] += 1;
+    // }
+
+    // console.log(values);
+    // ----------
 
     // This is hardhat address, change when deployed to another network.
     const runiverseContractAddress = MAIN_CONTRACT_ADDRESS;
